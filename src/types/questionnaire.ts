@@ -68,7 +68,6 @@ export type QuestionnaireStep =
   | 'tooth-loss-time'
   | 'teeth-count'
   | 'gum-health'
-  | 'hygiene'
   | 'odontogram'
   | 'summary'
   | 'processing'
