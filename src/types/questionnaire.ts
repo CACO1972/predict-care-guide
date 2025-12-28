@@ -62,8 +62,11 @@ export type QuestionnaireStep =
   | 'density-complete'
   | 'habits' // Bloque 2: fumas, diabetes, bruxismo
   | 'gum-health' // Bloque 3: salud encías (3 preguntas)
-  | 'tooth-loss' // Bloque 4: causa, tiempo, zonas
-  | 'odontogram'
-  | 'summary'
+  | 'irp-result' // Pantalla de resultado IRP (punto de quiebre)
+  | 'email-capture' // Captura de email para informe gratis
+  // === PREGUNTAS OCULTAS (se reactivarán para usuarios premium) ===
+  // | 'tooth-loss' // Bloque 4: causa, tiempo, zonas (OCULTO)
+  // | 'odontogram' // Subir imagen (OCULTO)
+  // | 'summary' // Resumen (OCULTO)
   | 'processing'
   | 'results';

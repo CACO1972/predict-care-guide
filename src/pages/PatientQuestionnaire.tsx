@@ -10,6 +10,8 @@ import ReportPreview from "@/components/ReportPreview";
 import ImageUpload from "@/components/ImageUpload";
 import AnswersSummary from "@/components/AnswersSummary";
 import LeadCaptureModal from "@/components/LeadCaptureModal";
+import IRPResultScreen from "@/components/IRPResultScreen";
+import EmailCaptureScreen from "@/components/EmailCaptureScreen";
 import { UserProfile, DensityProAnswers, ImplantXAnswers, QuestionnaireStep } from "@/types/questionnaire";
 import { calculateRiskAssessment, EnhancedAssessmentResult } from "@/utils/riskCalculation";
 import { getQuestionConfig } from "@/utils/questionConfig";
@@ -79,6 +81,7 @@ const PatientQuestionnaire = () => {
   const [isMuted, setIsMuted] = useState(true);
   const welcomeVideoRef = useRef<HTMLVideoElement>(null);
   const [feedbackAudioUrl, setFeedbackAudioUrl] = useState<string | undefined>(undefined);
+  const [irpScore, setIrpScore] = useState<number>(0);
 
   const { feedback, isLoading, generateFeedback, clearFeedback } = useRioFeedback();
   const { getExpressionFromFeedback } = useRioExpression();
@@ -89,7 +92,7 @@ const PatientQuestionnaire = () => {
   const getPreviousStep = (): QuestionnaireStep | null => {
     const baseSteps: QuestionnaireStep[] = ['welcome', 'name', 'demographics'];
     const densitySteps: QuestionnaireStep[] = ['density-intro', 'density-q1', 'density-q2', 'density-q3', 'density-q4', 'density-q5', 'density-complete'];
-    const mainSteps: QuestionnaireStep[] = ['habits', 'gum-health', 'tooth-loss', 'odontogram', 'summary'];
+    const mainSteps: QuestionnaireStep[] = ['habits', 'gum-health', 'irp-result', 'email-capture'];
     
     let allSteps = [...baseSteps];
     if (requiresDensityPro) {
@@ -113,7 +116,7 @@ const PatientQuestionnaire = () => {
   };
 
   const canGoBack = (): boolean => {
-    const noBackSteps: QuestionnaireStep[] = ['welcome', 'processing', 'results'];
+    const noBackSteps: QuestionnaireStep[] = ['welcome', 'processing', 'results', 'irp-result'];
     return !noBackSteps.includes(step) && getPreviousStep() !== null;
   };
 
@@ -122,20 +125,20 @@ const PatientQuestionnaire = () => {
     if (requiresDensityPro) {
       steps.push('density-intro', 'density-q1', 'density-q2', 'density-q3', 'density-q4', 'density-q5', 'density-complete');
     }
-    steps.push('habits', 'gum-health', 'tooth-loss', 'odontogram', 'summary', 'processing', 'results');
+    steps.push('habits', 'gum-health', 'irp-result', 'email-capture', 'processing', 'results');
     return steps.indexOf(step) + 1;
   };
 
   const getTotalSteps = (): number => {
-    return requiresDensityPro ? 14 : 8;
+    return requiresDensityPro ? 13 : 7;
   };
 
   const getCurrentPhase = (): 'base' | 'density' | 'health' | 'oral' | 'mapping' | 'complete' => {
     if (['welcome', 'name', 'demographics'].includes(step)) return 'base';
     if (step.startsWith('density')) return 'density';
     if (step === 'habits') return 'health';
-    if (['gum-health', 'tooth-loss'].includes(step)) return 'oral';
-    if (step === 'odontogram' || step === 'summary') return 'mapping';
+    if (step === 'gum-health') return 'oral';
+    if (step === 'irp-result' || step === 'email-capture') return 'mapping';
     return 'complete';
   };
 
@@ -245,9 +248,11 @@ const PatientQuestionnaire = () => {
     }
     else if (step === 'density-complete') setStep('habits');
     else if (step === 'habits') setStep('gum-health');
-    else if (step === 'gum-health') setStep('tooth-loss');
-    else if (step === 'tooth-loss') setStep('odontogram');
-    else if (step === 'odontogram') {
+    else if (step === 'gum-health') setStep('irp-result'); // Punto de quiebre -> pantalla IRP
+    else if (step === 'irp-result') {
+      // No debería llegar aquí, los botones de IRP manejan la navegación
+    }
+    else if (step === 'email-capture') {
       setStep('processing');
       triggerConfetti();
       setTimeout(() => {
@@ -257,8 +262,7 @@ const PatientQuestionnaire = () => {
           userProfile.age
         );
         setAssessmentResult(result);
-        // Show lead capture before results
-        setShowLeadCapture(true);
+        setStep('results');
       }, 3000);
     }
   };
@@ -272,24 +276,60 @@ const PatientQuestionnaire = () => {
       'density-q4': () => setStep('density-q5'),
       'density-q5': () => { setStep('density-complete'); setTimeout(() => triggerConfetti(), 300); },
       'habits': () => setStep('gum-health'),
-      'gum-health': () => setStep('tooth-loss'),
-      'tooth-loss': () => setStep('odontogram'),
-      'odontogram': () => {
-        setStep('processing');
-        triggerConfetti();
-        setTimeout(() => {
-          const result = calculateRiskAssessment(
-            requiresDensityPro ? densityAnswers as DensityProAnswers : null,
-            implantAnswers as ImplantXAnswers,
-            userProfile.age
-          );
-          setAssessmentResult(result);
-          // Show lead capture before results
-          setShowLeadCapture(true);
-        }, 3000);
-      },
+      'gum-health': () => setStep('irp-result'), // Ir a pantalla IRP después de salud de encías
     };
     return transitions[currentStep] || (() => {});
+  };
+
+  // Calcular IRP cuando se completan las preguntas de encías
+  const calculateAndShowIRP = () => {
+    // Cálculo del IRP
+    let score = 100;
+    
+    // Sangrado de encías
+    if (implantAnswers.gumBleeding === 'frequently') score -= 35;
+    else if (implantAnswers.gumBleeding === 'sometimes') score -= 15;
+    
+    // Dientes sueltos perdidos
+    if (implantAnswers.looseTeethLoss === 'several') score -= 40;
+    else if (implantAnswers.looseTeethLoss === '1-2') score -= 25;
+    
+    // Higiene oral
+    if (implantAnswers.oralHygiene === 'less-once') score -= 30;
+    else if (implantAnswers.oralHygiene === 'once') score -= 15;
+    
+    setIrpScore(Math.max(0, score));
+    setStep('irp-result');
+  };
+
+  // Handler para botón de pago
+  const handlePaymentClick = () => {
+    // Redirigir a MercadoPago - TODO: configurar link real
+    window.open('https://www.mercadopago.cl/checkout/v1/redirect?pref_id=YOUR_PREFERENCE_ID', '_blank');
+  };
+
+  // Handler para informe gratis
+  const handleFreeReportClick = () => {
+    setStep('email-capture');
+  };
+
+  // Handler para envío de email
+  const handleEmailSubmit = async (email: string) => {
+    // TODO: Enviar email con el informe IRP
+    console.log('Enviando informe a:', email);
+    
+    // Procesar y mostrar resultados
+    setStep('processing');
+    triggerConfetti();
+    setTimeout(() => {
+      const result = calculateRiskAssessment(
+        requiresDensityPro ? densityAnswers as DensityProAnswers : null,
+        implantAnswers as ImplantXAnswers,
+        userProfile.age
+      );
+      setAssessmentResult(result);
+      setStep('results');
+    }, 3000);
   };
 
   const renderContent = () => {
@@ -728,127 +768,88 @@ const PatientQuestionnaire = () => {
           </div>
         );
 
-      // BLOQUE 4: Pérdida dental (Causa, Tiempo, Zonas)
-      case 'tooth-loss':
+      // === PANTALLA IRP RESULT (Punto de quiebre) ===
+      case 'irp-result':
         return (
-          <div className="space-y-6 animate-fade-in">
-            <RioAvatar 
-              message="Entender por qué perdiste tus dientes nos da pistas importantes."
-              userName={userProfile.name}
-              customAudioUrl="/audio/rio-causa-pregunta.mp3"
-            />
-            {/* Pregunta 1: Causa */}
-            <QuestionCard
-              question={`1. ¿Cuál fue el motivo principal de la pérdida, ${userProfile.name}?`}
-              type="radio"
-              options={[
-                { value: 'cavity', label: 'Por una caries' },
-                { value: 'periodontitis', label: 'Por enfermedad de las encías (periodontitis)' },
-                { value: 'trauma', label: 'Por un golpe o accidente' },
-                { value: 'other', label: 'Otra razón' },
-              ]}
-              value={implantAnswers.toothLossCause}
-              onChange={(value) => {
-                setImplantAnswers({ ...implantAnswers, toothLossCause: value as any });
-              }}
-              onNext={() => {}}
-              hideNextButton={true}
-            />
-            {/* Pregunta 2: Tiempo */}
-            {implantAnswers.toothLossCause && (
-              <QuestionCard
-                question="2. ¿Hace cuánto tiempo perdiste el diente o dientes?"
-                type="radio"
-                options={[
-                  { value: 'less-1', label: 'Menos de 1 año' },
-                  { value: '1-3', label: 'Entre 1 y 3 años' },
-                  { value: 'more-3', label: 'Más de 3 años' },
-                ]}
-                value={implantAnswers.toothLossTime}
-                onChange={(value) => {
-                  setImplantAnswers({ ...implantAnswers, toothLossTime: value as any });
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
-            )}
-            {/* Pregunta 3: Zonas - Multi-selección */}
-            {implantAnswers.toothLossTime && (
-              <QuestionCard
-                question="3. ¿En qué zona o zonas te faltan dientes? (Puedes marcar más de una opción)"
-                type="checkbox"
-                options={[
-                  { value: 'superior-frontal', label: 'Maxilar superior - Zona frontal' },
-                  { value: 'superior-posterior', label: 'Maxilar superior - Zona posterior' },
-                  { value: 'inferior-frontal', label: 'Maxilar inferior - Zona frontal' },
-                  { value: 'inferior-posterior', label: 'Maxilar inferior - Zona posterior' },
-                ]}
-                value={implantAnswers.missingZones || []}
-                onChange={(value) => {
-                  const zones = value as string[];
-                  setImplantAnswers({ ...implantAnswers, missingZones: zones });
-                  if (zones.length > 0) {
-                    handleAnswerWithRioFeedback('missingZones', zones.join(', '), getNextStepFunction('tooth-loss'));
-                  }
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
-            )}
-          </div>
-        );
-
-      case 'odontogram':
-        const handleImageContinue = () => {
-          setStep('summary');
-        };
-
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <RioAvatar 
-              message={`Última pregunta, ${userProfile.name}. Si tienes una foto o radiografía de la zona, nuestra IA la analizará para darte información útil.`}
-              userName={userProfile.name}
-            />
-            <ImageUpload
-              onImageSelect={(file, preview, analysis) => {
-                setUploadedImage(preview);
-                setImageAnalysis(analysis);
-              }}
-              onContinue={handleImageContinue}
-              showSkip={true}
-              patientName={userProfile.name}
-              isPremium={!!leadData}
-            />
-          </div>
-        );
-
-      case 'summary':
-        const handleConfirmAndProcess = () => {
-          setStep('processing');
-          triggerConfetti();
-          setTimeout(() => {
-            const result = calculateRiskAssessment(
-              requiresDensityPro ? densityAnswers as DensityProAnswers : null,
-              implantAnswers as ImplantXAnswers,
-              userProfile.age
-            );
-            setAssessmentResult(result);
-            // Show lead capture before results
-            setShowLeadCapture(true);
-          }, 3000);
-        };
-
-        return (
-          <AnswersSummary
-            userProfile={userProfile}
-            densityAnswers={densityAnswers}
-            implantAnswers={implantAnswers}
-            requiresDensityPro={requiresDensityPro}
-            uploadedImage={uploadedImage}
-            onConfirm={handleConfirmAndProcess}
-            onEdit={() => setStep('name')}
+          <IRPResultScreen
+            gumBleeding={implantAnswers.gumBleeding || 'never'}
+            looseTeethLoss={implantAnswers.looseTeethLoss || 'no'}
+            oralHygiene={implantAnswers.oralHygiene || 'twice-plus'}
+            patientName={userProfile.name}
+            onPaymentClick={handlePaymentClick}
+            onFreeReportClick={handleFreeReportClick}
           />
         );
+
+      // === PANTALLA CAPTURA EMAIL ===
+      case 'email-capture':
+        return (
+          <EmailCaptureScreen
+            patientName={userProfile.name}
+            irpScore={irpScore}
+            onSubmit={handleEmailSubmit}
+          />
+        );
+
+      /* ========================================
+       * PREGUNTAS OCULTAS - SE REACTIVARÁN PARA USUARIOS PREMIUM
+       * ========================================
+       * 
+       * // BLOQUE 4: Pérdida dental (Causa, Tiempo, Zonas)
+       * case 'tooth-loss':
+       *   return (
+       *     <div className="space-y-6 animate-fade-in">
+       *       <RioAvatar 
+       *         message="Entender por qué perdiste tus dientes nos da pistas importantes."
+       *         userName={userProfile.name}
+       *         customAudioUrl="/audio/rio-causa-pregunta.mp3"
+       *       />
+       *       <QuestionCard
+       *         question={`1. ¿Cuál fue el motivo principal de la pérdida, ${userProfile.name}?`}
+       *         type="radio"
+       *         options={[
+       *           { value: 'cavity', label: 'Por una caries' },
+       *           { value: 'periodontitis', label: 'Por enfermedad de las encías (periodontitis)' },
+       *           { value: 'trauma', label: 'Por un golpe o accidente' },
+       *           { value: 'other', label: 'Otra razón' },
+       *         ]}
+       *         value={implantAnswers.toothLossCause}
+       *         onChange={(value) => {
+       *           setImplantAnswers({ ...implantAnswers, toothLossCause: value as any });
+       *         }}
+       *         onNext={() => {}}
+       *         hideNextButton={true}
+       *       />
+       *       {implantAnswers.toothLossCause && (
+       *         <QuestionCard
+       *           question="2. ¿Hace cuánto tiempo perdiste el diente o dientes?"
+       *           ...
+       *         />
+       *       )}
+       *       {implantAnswers.toothLossTime && (
+       *         <QuestionCard
+       *           question="3. ¿En qué zona o zonas te faltan dientes?"
+       *           type="checkbox"
+       *           ...
+       *         />
+       *       )}
+       *     </div>
+       *   );
+       * 
+       * case 'odontogram':
+       *   return (
+       *     <div className="space-y-6 animate-fade-in">
+       *       <RioAvatar message="Si tienes una foto o radiografía..." />
+       *       <ImageUpload ... />
+       *     </div>
+       *   );
+       * 
+       * case 'summary':
+       *   return (
+       *     <AnswersSummary ... />
+       *   );
+       * 
+       * ======================================== */
 
       case 'processing':
         return (
