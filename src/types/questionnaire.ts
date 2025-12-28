@@ -27,6 +27,7 @@ export interface ImplantXAnswers {
   oralHygiene: 'less-once' | 'once' | 'twice-plus';
   implantZones: string[]; // Array of tooth numbers
   teethToReplace: '1-2' | '3-8' | 'all'; // Number of teeth to replace
+  missingZones: string[]; // Zonas donde faltan dientes (multi-selección)
 }
 
 export interface AssessmentResult {
@@ -59,15 +60,9 @@ export type QuestionnaireStep =
   | 'density-q4'
   | 'density-q5'
   | 'density-complete'
-  | 'smoking'
-  | 'bruxism'
-  | 'bruxism-guard' // Nueva pregunta: ¿usa férula?
-  | 'diabetes'
-  | 'implant-history'
-  | 'tooth-loss'
-  | 'tooth-loss-time'
-  | 'teeth-count'
-  | 'gum-health'
+  | 'habits' // Bloque 2: fumas, diabetes, bruxismo
+  | 'gum-health' // Bloque 3: salud encías (3 preguntas)
+  | 'tooth-loss' // Bloque 4: causa, tiempo, zonas
   | 'odontogram'
   | 'summary'
   | 'processing'
