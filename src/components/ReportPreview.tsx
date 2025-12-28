@@ -17,7 +17,11 @@ import NextStepsCards from "./NextStepsCards";
 import PremiumReportSection from "./PremiumReportSection";
 import ImprovementPotential from "./ImprovementPotential";
 import WhatIfSimulator from "./WhatIfSimulator";
+import IRPReportSection from "./IRPReportSection";
+import FreeReportUpgradeCTA from "./FreeReportUpgradeCTA";
+import BasicReportUpgradeCTA from "./BasicReportUpgradeCTA";
 import { supabase } from "@/integrations/supabase/client";
+import { type ReportLevel, type IRPData, getVisibleSections } from "@/types/reportLevels";
 
 // Función para obtener el rango de éxito
 const getSuccessRange = (percentage: number): string => {
@@ -151,12 +155,19 @@ interface ReportPreviewProps {
     uploadedImage?: string | null;
     imageAnalysis?: string | null;
     synergies?: string[];
-    nTeeth?: number; // Number of teeth to rehabilitate
+    nTeeth?: number;
   };
+  // Nuevo: nivel del informe (free, basic, premium)
+  reportLevel?: ReportLevel;
+  // Nuevo: datos IRP para el informe gratuito
+  irpData?: IRPData;
 }
 
-const ReportPreview = ({ evaluation }: ReportPreviewProps) => {
+const ReportPreview = ({ evaluation, reportLevel = 'free', irpData }: ReportPreviewProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Obtener secciones visibles según el nivel
+  const sections = getVisibleSections(reportLevel);
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -172,7 +183,10 @@ const ReportPreview = ({ evaluation }: ReportPreviewProps) => {
           successRange: getSuccessRange(evaluation.successProbability),
           factors: evaluation.factors,
           recommendations: evaluation.recommendations,
-          synergies: evaluation.synergies
+          synergies: evaluation.synergies,
+          // Nuevo: enviar nivel de informe y datos IRP
+          reportLevel,
+          irpData
         }
       });
 
@@ -207,51 +221,83 @@ const ReportPreview = ({ evaluation }: ReportPreviewProps) => {
   const pronosticoColor = evaluation.pronosticoColor || 'success';
   const isWarning = pronosticoColor === 'warning';
 
+  // Función para obtener el título según el nivel
+  const getReportTitle = () => {
+    switch (reportLevel) {
+      case 'free':
+        return 'IRP - Informe Gratuito';
+      case 'basic':
+        return 'Informe Básico - Plan de Acción';
+      case 'premium':
+        return 'Informe Premium';
+      default:
+        return 'Reporte ImplantX';
+    }
+  };
+
+  // Función para obtener el badge según el nivel
+  const getReportBadge = () => {
+    switch (reportLevel) {
+      case 'free':
+        return { text: 'GRATUITO', color: 'bg-emerald-500/20 text-emerald-600' };
+      case 'basic':
+        return { text: 'BÁSICO', color: 'bg-primary/20 text-primary' };
+      case 'premium':
+        return { text: 'PREMIUM', color: 'bg-amber-500/20 text-amber-600' };
+      default:
+        return { text: 'OFICIAL', color: 'bg-primary/20 text-primary' };
+    }
+  };
+
+  const badge = getReportBadge();
+
   return (
     <Card className="overflow-hidden border border-primary/20 rounded-2xl shadow-xl shadow-primary/5">
-      {/* Header con branding premium */}
-      <div className="relative p-6 border-b border-primary/20 bg-gradient-to-r from-background via-primary/5 to-background overflow-hidden">
-        {/* Glow decorativo */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 bg-primary/10 rounded-full blur-3xl" />
-        
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {/* Logo ImplantX */}
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-primary-foreground font-bold text-lg">IX</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-foreground text-lg">Reporte ImplantX</h3>
-                <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold rounded-full">
-                  OFICIAL
-                </span>
+      {/* Header con branding premium - SIEMPRE VISIBLE */}
+      {sections.header && (
+        <div className="relative p-6 border-b border-primary/20 bg-gradient-to-r from-background via-primary/5 to-background overflow-hidden">
+          {/* Glow decorativo */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 bg-primary/10 rounded-full blur-3xl" />
+          
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Logo ImplantX */}
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
+                <span className="text-primary-foreground font-bold text-lg">IX</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>ID: {evaluation.id}</span>
-                <span>•</span>
-                <span>{evaluation.date}</span>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-foreground text-lg">{getReportTitle()}</h3>
+                  <span className={cn("px-2 py-0.5 text-[10px] font-bold rounded-full", badge.color)}>
+                    {badge.text}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>ID: {evaluation.id}</span>
+                  <span>•</span>
+                  <span>{evaluation.date}</span>
+                </div>
               </div>
             </div>
+            <Button 
+              onClick={handleDownload} 
+              size="sm" 
+              disabled={isDownloading}
+              className="gap-2 rounded-xl bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 shadow-md"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isDownloading ? 'Generando...' : 'Descargar Reporte'}
+            </Button>
           </div>
-          <Button 
-            onClick={handleDownload} 
-            size="sm" 
-            disabled={isDownloading}
-            className="gap-2 rounded-xl bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 shadow-md"
-          >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {isDownloading ? 'Generando...' : 'Descargar Reporte'}
-          </Button>
         </div>
-      </div>
+      )}
 
       <div className="p-6 space-y-6 bg-background">
-        {/* Paciente con mejor estilo */}
+        {/* Paciente con mejor estilo - SIEMPRE VISIBLE */}
         {evaluation.patient && (
           <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -264,57 +310,150 @@ const ReportPreview = ({ evaluation }: ReportPreviewProps) => {
           </div>
         )}
 
-        {/* Resultado Principal - Gauge Animado */}
-        <div className={cn(
-          "rounded-2xl p-8 text-center border relative overflow-hidden",
-          isWarning 
-            ? "bg-gradient-to-br from-warning/10 via-warning/5 to-background border-warning/20" 
-            : "bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20"
-        )}>
-          {/* Decorative glow */}
+        {/* Resultado Principal - Gauge Animado - SIEMPRE VISIBLE */}
+        {sections.successRange && (
           <div className={cn(
-            "absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl opacity-30",
-            isWarning ? "bg-warning" : "bg-primary"
-          )} />
-          
-          <div className="relative">
-            {/* Animated Gauge */}
-            <SuccessGauge 
-              percentage={evaluation.successProbability}
-              isWarning={isWarning}
-              label={evaluation.pronosticoLabel || 'Pronóstico Favorable'}
-            />
+            "rounded-2xl p-8 text-center border relative overflow-hidden",
+            isWarning 
+              ? "bg-gradient-to-br from-warning/10 via-warning/5 to-background border-warning/20" 
+              : "bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20"
+          )}>
+            {/* Decorative glow */}
+            <div className={cn(
+              "absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl opacity-30",
+              isWarning ? "bg-warning" : "bg-primary"
+            )} />
             
-            {/* Message */}
-            <p className="text-foreground/80 text-sm sm:text-base leading-relaxed max-w-md mx-auto mt-4">
-              {evaluation.pronosticoMessage || 'Tu perfil muestra buenas condiciones para el tratamiento con implantes.'}
-            </p>
+            <div className="relative">
+              {/* Animated Gauge */}
+              <SuccessGauge 
+                percentage={evaluation.successProbability}
+                isWarning={isWarning}
+                label={evaluation.pronosticoLabel || 'Pronóstico Favorable'}
+              />
+              
+              {/* Message */}
+              <p className="text-foreground/80 text-sm sm:text-base leading-relaxed max-w-md mx-auto mt-4">
+                {evaluation.pronosticoMessage || 'Tu perfil muestra buenas condiciones para el tratamiento con implantes.'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Aclaración sobre situación actual y potencial de mejora */}
-        <ImprovementPotential 
-          currentProbability={evaluation.successProbability}
-          factors={evaluation.factors}
-          synergies={evaluation.synergies}
-        />
+        {/* === SECCIÓN IRP - SOLO VISIBLE SIEMPRE (incluida en todos los niveles) === */}
+        {sections.irpSection && irpData && (
+          <IRPReportSection 
+            irpData={irpData}
+            patientName={evaluation.patient}
+          />
+        )}
 
-        {/* Simulador interactivo ¿Qué pasa si? */}
-        <WhatIfSimulator
-          currentProbability={evaluation.successProbability}
-          factors={evaluation.factors}
-          synergies={evaluation.synergies}
-        />
+        {/* === NOTA IMPORTANTE - SIEMPRE VISIBLE === */}
+        {sections.importantNote && (
+          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-xl p-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-semibold text-foreground">
+                  Importante: Esta es una "Foto" de tu Situación Actual
+                </h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  El porcentaje de éxito estimado representa tu <strong className="text-foreground">situación actual</strong>. 
+                  Este valor <strong className="text-foreground">puede mejorar significativamente</strong> si trabajas en los factores de riesgo modificables.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Share Buttons - Virality */}
-        <ShareButtons 
-          patientName={evaluation.patient}
-          successProbability={evaluation.successProbability}
-          pronosticoLabel={evaluation.pronosticoLabel}
-        />
+        {/* === CTA UPGRADE PARA INFORME GRATUITO === */}
+        {sections.freeUpgradeCTA && (
+          <FreeReportUpgradeCTA />
+        )}
 
-        {/* Imagen y análisis de IA estructurado */}
-        {evaluation.uploadedImage && (
+        {/* ========================================== */}
+        {/* === SECCIONES DEL INFORME BÁSICO ($14.900) === */}
+        {/* ========================================== */}
+
+        {/* Potencial de mejora - BÁSICO Y PREMIUM */}
+        {sections.improvementPotential && (
+          <ImprovementPotential 
+            currentProbability={evaluation.successProbability}
+            factors={evaluation.factors}
+            synergies={evaluation.synergies}
+          />
+        )}
+
+        {/* Share Buttons - BÁSICO Y PREMIUM */}
+        {sections.improvementPotential && (
+          <ShareButtons 
+            patientName={evaluation.patient}
+            successProbability={evaluation.successProbability}
+            pronosticoLabel={evaluation.pronosticoLabel}
+          />
+        )}
+
+        {/* Factores Evaluados - Gráfico de Barras - BÁSICO Y PREMIUM */}
+        {sections.riskFactorBars && evaluation.factors.length > 0 && (
+          <RiskFactorBars factors={evaluation.factors} />
+        )}
+
+        {/* Recomendaciones con Cards - BÁSICO Y PREMIUM */}
+        {sections.recommendations && evaluation.recommendations.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Recomendaciones Personalizadas
+            </h4>
+            <div className="grid gap-3">
+              {evaluation.recommendations.map((rec, i) => (
+                <div 
+                  key={i} 
+                  className="group relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                >
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform" />
+                  <div className="relative flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-foreground mb-1">{rec.text}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{rec.evidence}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Próximos pasos - BÁSICO Y PREMIUM */}
+        {sections.nextSteps && (
+          <NextStepsCards />
+        )}
+
+        {/* === CTA UPGRADE PARA INFORME BÁSICO === */}
+        {sections.basicUpgradeCTA && (
+          <BasicReportUpgradeCTA uploadedImage={evaluation.uploadedImage} />
+        )}
+
+        {/* ========================================== */}
+        {/* === SECCIONES DEL INFORME PREMIUM ($29.990) === */}
+        {/* ========================================== */}
+
+        {/* Simulador interactivo ¿Qué pasa si? - SOLO PREMIUM */}
+        {sections.whatIfSimulator && (
+          <WhatIfSimulator
+            currentProbability={evaluation.successProbability}
+            factors={evaluation.factors}
+            synergies={evaluation.synergies}
+          />
+        )}
+
+        {/* Imagen y análisis de IA estructurado - SOLO PREMIUM */}
+        {sections.imageAnalysis && evaluation.uploadedImage && (
           <div className="space-y-4">
             <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
               <Bone className="h-4 w-4 text-primary" />
@@ -362,247 +501,224 @@ const ReportPreview = ({ evaluation }: ReportPreviewProps) => {
           </div>
         )}
 
-        {/* Metodología Científica y Validez Clínica */}
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <Stethoscope className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground">Metodología del Algoritmo ImplantX</h4>
-              <p className="text-xs text-muted-foreground">Basado en revisión sistemática de 17,025 implantes</p>
-            </div>
-          </div>
-          
-          <div className="text-sm text-muted-foreground space-y-3 leading-relaxed">
-            <p>
-              Esta preevaluación utiliza el <strong className="text-foreground">algoritmo sinérgico ImplantX</strong>, desarrollado a partir del análisis de <strong className="text-foreground">17,025 implantes documentados</strong> en estudios longitudinales de alta calidad con seguimiento de hasta 22 años.
-            </p>
-            
-            <div className="bg-background/50 rounded-lg p-3 border border-primary/10 space-y-2">
-              <p className="flex items-start gap-2">
-                <Bone className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-foreground">Inferencia de densidad ósea:</strong> El factor más crítico para el éxito es la calidad y cantidad de hueso. Nuestro algoritmo lo estima <em>indirectamente sin radiografía</em> mediante la <strong className="text-foreground">zona anatómica</strong> y el <strong className="text-foreground">tiempo desde la pérdida dental</strong>, con correlación validada de r=0.73 (p&lt;0.001).
-                </span>
-              </p>
-            </div>
-
-            <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
-              <p className="flex items-start gap-2">
-                <Activity className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-foreground">Modelo de interacciones sinérgicas:</strong> A diferencia de modelos lineales tradicionales (precisión 70-75%), ImplantX incorpora <strong className="text-foreground">10 interacciones documentadas</strong> entre factores de riesgo (ej: tabaco+diabetes, bruxismo+zona posterior), logrando un AUC de 0.891 vs 0.743 de modelos lineales.
-                </span>
-              </p>
-            </div>
-
-            <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
-              <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Fuentes científicas:</strong> University of British Columbia Cohort (PMC8359846, 10,871 implantes), Meta-análisis de Howe et al. 2019 (PMID:30904559), 20-Year Survival Meta-Analysis 2024 (PMC11416373).
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <a 
-                href="/docs/ImplantX_Clinical_Validation_White_Paper.pdf" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline flex items-center gap-1"
-              >
-                <FileText className="w-3 h-3" />
-                Ver White Paper completo (PDF)
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Qué significa tu resultado */}
-        <div className="bg-muted/30 rounded-xl p-5 space-y-3">
-          <h4 className="font-semibold text-foreground">¿Qué significa tu resultado?</h4>
-          <div className="text-sm text-muted-foreground space-y-2">
-            {isWarning ? (
-              <>
-                <p>Tu evaluación indica que hay algunos factores que podrían requerir atención especial antes o durante el tratamiento con implantes.</p>
-                <p><strong className="text-foreground">Esto no significa que no puedas recibir implantes</strong>, sino que tu especialista diseñará un plan personalizado considerando estos factores.</p>
-              </>
-            ) : (
-              <>
-                <p>Tu evaluación indica que tienes buenas condiciones generales para recibir implantes dentales.</p>
-                <p><strong className="text-foreground">Esto es una excelente noticia</strong> y significa que el proceso debería desarrollarse de manera favorable con los cuidados adecuados.</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Synergy Factors Section */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm text-foreground">Análisis de Factores Combinados</h4>
-          <SynergyFactors 
-            synergies={evaluation.synergies || []} 
-          />
-        </div>
-
-        {/* Treatment Infographic */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-sm text-foreground">Tu Guía de Tratamiento</h4>
-          <TreatmentInfographic
-            synergies={evaluation.synergies || []}
-            successProbability={evaluation.successProbability}
-            pronosticoLabel={evaluation.pronosticoLabel || 'Favorable'}
-            patientContext={{
-              nTeeth: evaluation.nTeeth || 1,
-              imageAnalysis: evaluation.imageAnalysis || undefined
-            }}
-          />
-        </div>
-
-        {/* Factores Evaluados - Gráfico de Barras */}
-        {evaluation.factors.length > 0 && (
-          <RiskFactorBars factors={evaluation.factors} />
-        )}
-
-        {/* Recomendaciones con Cards */}
-        {evaluation.recommendations.length > 0 && (
+        {/* Synergy Factors Section - SOLO PREMIUM */}
+        {sections.synergyFactors && (
           <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-primary" />
-              Recomendaciones Personalizadas
-            </h4>
-            <div className="grid gap-3">
-              {evaluation.recommendations.map((rec, i) => (
-                <div 
-                  key={i} 
-                  className="group relative overflow-hidden p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
-                >
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform" />
-                  <div className="relative flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-foreground mb-1">{rec.text}</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{rec.evidence}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h4 className="font-semibold text-sm text-foreground">Análisis de Factores Combinados</h4>
+            <SynergyFactors 
+              synergies={evaluation.synergies || []} 
+            />
           </div>
         )}
 
-        {/* Próximos pasos - Cards con iconos grandes */}
-        <NextStepsCards />
-
-        {/* Premium Report Section with Ebook + Smile Simulation */}
-        <PremiumReportSection 
-          patientName={evaluation.patient}
-          uploadedImage={evaluation.uploadedImage}
-          pronosticoLabel={evaluation.pronosticoLabel}
-        />
-
-        {/* FAQ Section */}
-        <div className="bg-muted/30 rounded-xl p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <AlertCircle className="w-4 h-4 text-primary" />
-            </div>
-            <h4 className="font-semibold text-foreground">Preguntas Frecuentes</h4>
-          </div>
-          
+        {/* Treatment Infographic - SOLO PREMIUM */}
+        {sections.treatmentTimeline && (
           <div className="space-y-3">
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
-                ¿Qué tan confiable es esta evaluación?
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-2 text-sm text-muted-foreground pl-1">
-                El algoritmo ImplantX fue desarrollado analizando <strong>17,025 implantes</strong> de estudios con seguimiento de hasta 22 años. Logra un AUC de 0.891, significativamente superior a modelos tradicionales (0.743). Mostramos <strong>rangos de probabilidad</strong> en lugar de cifras exactas para reflejar con mayor precisión la variabilidad inherente a cada caso clínico.
-              </p>
-            </details>
-            
-            <div className="h-px bg-border" />
-            
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
-                ¿Por qué muestran rangos y no un porcentaje exacto?
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-2 text-sm text-muted-foreground pl-1">
-                Científicamente, los intervalos de confianza del 95% en estudios de implantes varían ±1.2-2.5%. Mostrar un número exacto (ej: "87%") sería engañoso. Los rangos que presentamos reflejan la variabilidad real documentada en la literatura y son más honestos con la naturaleza probabilística de cualquier predicción médica.
-              </p>
-            </details>
-            
-            <div className="h-px bg-border" />
-            
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
-                ¿Cuánto cuesta un implante dental?
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-2 text-sm text-muted-foreground pl-1">
-                El costo varía según la complejidad del caso, número de implantes y tratamientos previos necesarios. En el Reporte Premium encontrarás una estimación personalizada.
-              </p>
-            </details>
-            
-            <div className="h-px bg-border" />
-            
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
-                ¿Cuánto tiempo toma el tratamiento?
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-2 text-sm text-muted-foreground pl-1">
-                El proceso completo puede tomar entre 3 y 6 meses, dependiendo de la cicatrización ósea. Casos complejos pueden requerir más tiempo.
-              </p>
-            </details>
-            
-            <div className="h-px bg-border" />
-            
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
-                ¿Duele ponerse un implante?
-                <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
-              </summary>
-              <p className="mt-2 text-sm text-muted-foreground pl-1">
-                La cirugía se realiza con anestesia local, por lo que no sentirás dolor durante el procedimiento. Después, las molestias son manejables con medicación.
-              </p>
-            </details>
-          </div>
-        </div>
-
-        {/* CTA - Agendar consulta - Sin referencia a clínica específica */}
-        <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-center space-y-4 shadow-lg shadow-primary/20">
-          <div className="w-12 h-12 mx-auto rounded-full bg-primary-foreground/20 flex items-center justify-center mb-2">
-            <Calendar className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <p className="text-primary-foreground font-bold text-lg">
-            ¿Listo para dar el siguiente paso?
-          </p>
-          <p className="text-primary-foreground/80 text-sm max-w-sm mx-auto">
-            Comparte este reporte con tu dentista de confianza. Ya tendrá toda la información que necesita para evaluarte.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <button 
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: 'Mi Evaluación ImplantX',
-                    text: `Mi evaluación de implantes dentales - ${evaluation.pronosticoLabel}`,
-                    url: window.location.href
-                  });
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  toast.success("Enlace copiado al portapapeles");
-                }
+            <h4 className="font-semibold text-sm text-foreground">Tu Guía de Tratamiento</h4>
+            <TreatmentInfographic
+              synergies={evaluation.synergies || []}
+              successProbability={evaluation.successProbability}
+              pronosticoLabel={evaluation.pronosticoLabel || 'Favorable'}
+              patientContext={{
+                nTeeth: evaluation.nTeeth || 1,
+                imageAnalysis: evaluation.imageAnalysis || undefined
               }}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-foreground text-primary hover:bg-primary-foreground/90 transition-colors font-semibold"
-            >
-              <ArrowRight className="w-4 h-4" />
-              Compartir con mi Dentista
-            </button>
+            />
           </div>
-        </div>
+        )}
+
+        {/* Metodología Científica - BÁSICO Y PREMIUM */}
+        {(sections.recommendations || sections.treatmentTimeline) && (
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Stethoscope className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-foreground">Metodología del Algoritmo ImplantX</h4>
+                <p className="text-xs text-muted-foreground">Basado en revisión sistemática de 17,025 implantes</p>
+              </div>
+            </div>
+            
+            <div className="text-sm text-muted-foreground space-y-3 leading-relaxed">
+              <p>
+                Esta preevaluación utiliza el <strong className="text-foreground">algoritmo sinérgico ImplantX</strong>, desarrollado a partir del análisis de <strong className="text-foreground">17,025 implantes documentados</strong> en estudios longitudinales de alta calidad con seguimiento de hasta 22 años.
+              </p>
+              
+              <div className="bg-background/50 rounded-lg p-3 border border-primary/10 space-y-2">
+                <p className="flex items-start gap-2">
+                  <Bone className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-foreground">Inferencia de densidad ósea:</strong> El factor más crítico para el éxito es la calidad y cantidad de hueso. Nuestro algoritmo lo estima <em>indirectamente sin radiografía</em> mediante la <strong className="text-foreground">zona anatómica</strong> y el <strong className="text-foreground">tiempo desde la pérdida dental</strong>, con correlación validada de r=0.73 (p&lt;0.001).
+                  </span>
+                </p>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
+                <p className="flex items-start gap-2">
+                  <Activity className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-foreground">Modelo de interacciones sinérgicas:</strong> A diferencia de modelos lineales tradicionales (precisión 70-75%), ImplantX incorpora <strong className="text-foreground">10 interacciones documentadas</strong> entre factores de riesgo (ej: tabaco+diabetes, bruxismo+zona posterior), logrando un AUC de 0.891 vs 0.743 de modelos lineales.
+                  </span>
+                </p>
+              </div>
+
+              <div className="bg-background/50 rounded-lg p-3 border border-primary/10">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Fuentes científicas:</strong> University of British Columbia Cohort (PMC8359846, 10,871 implantes), Meta-análisis de Howe et al. 2019 (PMID:30954559), 20-Year Survival Meta-Analysis 2024 (PMC11416373).
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a 
+                  href="/docs/ImplantX_Clinical_Validation_White_Paper.pdf" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                >
+                  <FileText className="w-3 h-3" />
+                  Ver White Paper completo (PDF)
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Qué significa tu resultado - BÁSICO Y PREMIUM */}
+        {sections.recommendations && (
+          <div className="bg-muted/30 rounded-xl p-5 space-y-3">
+            <h4 className="font-semibold text-foreground">¿Qué significa tu resultado?</h4>
+            <div className="text-sm text-muted-foreground space-y-2">
+              {isWarning ? (
+                <>
+                  <p>Tu evaluación indica que hay algunos factores que podrían requerir atención especial antes o durante el tratamiento con implantes.</p>
+                  <p><strong className="text-foreground">Esto no significa que no puedas recibir implantes</strong>, sino que tu especialista diseñará un plan personalizado considerando estos factores.</p>
+                </>
+              ) : (
+                <>
+                  <p>Tu evaluación indica que tienes buenas condiciones generales para recibir implantes dentales.</p>
+                  <p><strong className="text-foreground">Esto es una excelente noticia</strong> y significa que el proceso debería desarrollarse de manera favorable con los cuidados adecuados.</p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Premium Report Section with Ebook + Smile Simulation - SOLO PREMIUM */}
+        {sections.smileSimulation && (
+          <PremiumReportSection 
+            patientName={evaluation.patient}
+            uploadedImage={evaluation.uploadedImage}
+            pronosticoLabel={evaluation.pronosticoLabel}
+          />
+        )}
+
+        {/* FAQ Section - BÁSICO Y PREMIUM */}
+        {sections.recommendations && (
+          <div className="bg-muted/30 rounded-xl p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-primary" />
+              </div>
+              <h4 className="font-semibold text-foreground">Preguntas Frecuentes</h4>
+            </div>
+            
+            <div className="space-y-3">
+              <details className="group">
+                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ¿Qué tan confiable es esta evaluación?
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground pl-1">
+                  El algoritmo ImplantX fue desarrollado analizando <strong>17,025 implantes</strong> de estudios con seguimiento de hasta 22 años. Logra un AUC de 0.891, significativamente superior a modelos tradicionales (0.743). Mostramos <strong>rangos de probabilidad</strong> en lugar de cifras exactas para reflejar con mayor precisión la variabilidad inherente a cada caso clínico.
+                </p>
+              </details>
+              
+              <div className="h-px bg-border" />
+              
+              <details className="group">
+                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ¿Por qué muestran rangos y no un porcentaje exacto?
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground pl-1">
+                  Científicamente, los intervalos de confianza del 95% en estudios de implantes varían ±1.2-2.5%. Mostrar un número exacto (ej: "87%") sería engañoso. Los rangos que presentamos reflejan la variabilidad real documentada en la literatura y son más honestos con la naturaleza probabilística de cualquier predicción médica.
+                </p>
+              </details>
+              
+              <div className="h-px bg-border" />
+              
+              <details className="group">
+                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ¿Cuánto cuesta un implante dental?
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground pl-1">
+                  El costo varía según la complejidad del caso, número de implantes y tratamientos previos necesarios. En el Reporte Premium encontrarás una estimación personalizada.
+                </p>
+              </details>
+              
+              <div className="h-px bg-border" />
+              
+              <details className="group">
+                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ¿Cuánto tiempo toma el tratamiento?
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground pl-1">
+                  El proceso completo puede tomar entre 3 y 6 meses, dependiendo de la cicatrización ósea. Casos complejos pueden requerir más tiempo.
+                </p>
+              </details>
+              
+              <div className="h-px bg-border" />
+              
+              <details className="group">
+                <summary className="flex items-center justify-between cursor-pointer text-sm font-medium text-foreground hover:text-primary transition-colors">
+                  ¿Duele ponerse un implante?
+                  <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
+                </summary>
+                <p className="mt-2 text-sm text-muted-foreground pl-1">
+                  La cirugía se realiza con anestesia local, por lo que no sentirás dolor durante el procedimiento. Después, las molestias son manejables con medicación.
+                </p>
+              </details>
+            </div>
+          </div>
+        )}
+
+        {/* CTA - Agendar consulta - BÁSICO Y PREMIUM */}
+        {sections.nextSteps && (
+          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-6 text-center space-y-4 shadow-lg shadow-primary/20">
+            <div className="w-12 h-12 mx-auto rounded-full bg-primary-foreground/20 flex items-center justify-center mb-2">
+              <Calendar className="w-6 h-6 text-primary-foreground" />
+            </div>
+            <p className="text-primary-foreground font-bold text-lg">
+              ¿Listo para dar el siguiente paso?
+            </p>
+            <p className="text-primary-foreground/80 text-sm max-w-sm mx-auto">
+              Comparte este reporte con tu dentista de confianza. Ya tendrá toda la información que necesita para evaluarte.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <button 
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: 'Mi Evaluación ImplantX',
+                      text: `Mi evaluación de implantes dentales - ${evaluation.pronosticoLabel}`,
+                      url: window.location.href
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("Enlace copiado al portapapeles");
+                  }
+                }}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-foreground text-primary hover:bg-primary-foreground/90 transition-colors font-semibold"
+              >
+                <ArrowRight className="w-4 h-4" />
+                Compartir con mi Dentista
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="border-t border-border pt-4 text-center space-y-1">
