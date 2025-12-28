@@ -1,1 +1,22 @@
 project_id = "hshsdrnfxiyctbojwnvw"
+
+[functions.generate-pdf-report]
+verify_jwt = false
+
+[functions.send-report-email]
+verify_jwt = false
+
+[functions.analyze-dental-image]
+verify_jwt = false
+
+[functions.generate-treatment-infographic]
+verify_jwt = false
+
+[functions.rio-feedback]
+verify_jwt = false
+
+[functions.rio-tts]
+verify_jwt = false
+
+[functions.simulate-smile]
+verify_jwt = false
