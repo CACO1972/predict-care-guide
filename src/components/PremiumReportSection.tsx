@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import UrgencyCounter from "./UrgencyCounter";
-
+import MercadoPagoButton from "./MercadoPagoButton";
 interface PremiumReportSectionProps {
   patientName?: string;
   uploadedImage?: string | null;
@@ -235,39 +235,61 @@ const PremiumReportSection = ({
         {/* Urgency Counter */}
         <UrgencyCounter className="mb-4" />
 
-        {/* Pricing */}
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-sm text-muted-foreground line-through">$49.990</span>
-            <span className="text-3xl font-bold text-foreground">$29.990</span>
-            <span className="text-sm text-muted-foreground">CLP</span>
-            <span className="px-2 py-0.5 bg-red-500/20 text-red-500 text-xs font-bold rounded-full">-40%</span>
+        {/* Pricing Options */}
+        <div className="space-y-4">
+          {/* Plan Esencial - $14.990 */}
+          <div className="p-4 rounded-xl border border-border bg-muted/30 hover:border-primary/40 transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h5 className="font-semibold text-foreground">Informe Esencial</h5>
+                <p className="text-xs text-muted-foreground">Análisis básico + recomendaciones</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-foreground">$14.990</span>
+                <span className="text-sm text-muted-foreground"> CLP</span>
+              </div>
+            </div>
+            <ul className="text-xs text-muted-foreground space-y-1 mb-3">
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Evaluación de riesgo personalizada</li>
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Plan de tratamiento básico</li>
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Guía de cuidados pre-implante</li>
+            </ul>
+            <MercadoPagoButton preferenceId="130000413-17acabf6-744b-41e6-be85-2488b518c274" />
           </div>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-            <CreditCard className="w-3 h-3" />
-            Hasta 3 cuotas sin interés
-          </p>
-          
-          {/* Payment Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a 
-              href="https://mpago.li/2jpxDi2" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#009ee3] text-white hover:bg-[#007bb5] transition-all duration-300 font-semibold shadow-lg hover:scale-[1.02]"
-            >
-              <CreditCard className="w-5 h-5" />
-              Pagar con MercadoPago
-            </a>
-            <a 
-              href="https://www.flow.cl/uri/htBg1Fpys" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#00b140] text-white hover:bg-[#009933] transition-all duration-300 font-semibold shadow-lg hover:scale-[1.02]"
-            >
-              <CreditCard className="w-5 h-5" />
-              Pagar con Flow
-            </a>
+
+          {/* Plan Premium - $29.000 */}
+          <div className="p-4 rounded-xl border-2 border-primary bg-gradient-to-br from-primary/10 to-primary/5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-bl-lg">
+              MÁS POPULAR
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h5 className="font-semibold text-foreground flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-primary" />
+                  Informe Premium
+                </h5>
+                <p className="text-xs text-muted-foreground">Análisis completo + simulación IA</p>
+              </div>
+              <div className="text-right">
+                <span className="text-sm text-muted-foreground line-through">$49.990</span>
+                <div>
+                  <span className="text-2xl font-bold text-primary">$29.000</span>
+                  <span className="text-sm text-muted-foreground"> CLP</span>
+                </div>
+              </div>
+            </div>
+            <ul className="text-xs text-muted-foreground space-y-1 mb-3">
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Todo lo del plan Esencial</li>
+              <li className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-primary" /> Simulación de sonrisa con IA</li>
+              <li className="flex items-center gap-1"><Book className="w-3 h-3 text-primary" /> Ebook completo sobre implantes</li>
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Estimación de costos detallada</li>
+              <li className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-primary" /> Consulta prioritaria con especialista</li>
+            </ul>
+            <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-3">
+              <CreditCard className="w-3 h-3" />
+              Hasta 3 cuotas sin interés
+            </p>
+            <MercadoPagoButton preferenceId="130000413-5c54f887-998b-451f-9d14-21d8a1822264" />
           </div>
         </div>
       </div>
