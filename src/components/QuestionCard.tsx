@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, ChevronRight, ArrowLeft } from "lucide-react";
@@ -9,10 +10,10 @@ import { useState } from "react";
 
 interface QuestionCardProps {
   question: string;
-  type: 'text' | 'number' | 'radio' | 'gender';
+  type: 'text' | 'number' | 'radio' | 'gender' | 'checkbox';
   options?: { value: string; label: string }[];
-  value?: string | number;
-  onChange: (value: string | number) => void;
+  value?: string | number | string[];
+  onChange: (value: string | number | string[]) => void;
   onNext: () => void;
   onBack?: () => void;
   showBackButton?: boolean;
@@ -156,6 +157,44 @@ const QuestionCard = ({
               </div>
             ))}
           </RadioGroup>
+        )}
+
+        {type === 'checkbox' && options && (
+          <div className="space-y-2">
+            {options.map((option) => {
+              const selectedValues = (value as string[]) || [];
+              const isChecked = selectedValues.includes(option.value);
+              
+              return (
+                <div 
+                  key={option.value}
+                  onClick={() => {
+                    const currentValues = (value as string[]) || [];
+                    const newValues = isChecked
+                      ? currentValues.filter(v => v !== option.value)
+                      : [...currentValues, option.value];
+                    onChange(newValues);
+                  }}
+                  className={cn(
+                    "flex items-center space-x-3 p-4 rounded-xl border cursor-pointer transition-all duration-200",
+                    "hover:border-primary/50 hover:bg-muted/30",
+                    isChecked
+                      ? "border-primary bg-primary/5" 
+                      : "border-border"
+                  )}
+                >
+                  <Checkbox 
+                    checked={isChecked}
+                    id={option.value}
+                    className="border-2 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" 
+                  />
+                  <Label htmlFor={option.value} className="flex-1 cursor-pointer font-medium text-foreground">
+                    {option.label}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
