@@ -1,15 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, AlertCircle, Lightbulb, FileText, CreditCard } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, Lightbulb, FileText, CreditCard, TrendingUp, Shield, Zap } from "lucide-react";
 import RioAvatar from "@/components/RioAvatar";
+import MercadoPagoButton from "@/components/MercadoPagoButton";
 import { cn } from "@/lib/utils";
+import { MERCADOPAGO_PREFERENCES } from "@/types/reportLevels";
 
 interface IRPResultScreenProps {
   gumBleeding: 'never' | 'sometimes' | 'frequently';
   looseTeethLoss: 'no' | '1-2' | 'several';
   oralHygiene: 'less-once' | 'once' | 'twice-plus';
+  smoking?: 'no' | 'less-10' | '10-plus';
+  diabetes?: 'no' | 'controlled' | 'uncontrolled';
+  bruxism?: 'no' | 'unsure' | 'yes';
   patientName?: string;
+  patientEmail?: string;
   onPaymentClick: () => void;
   onFreeReportClick: () => void;
 }
@@ -80,7 +86,6 @@ const getPersonalizedAdvice = (
   looseTeethLoss: string,
   oralHygiene: string
 ): string => {
-  // Priorizar el consejo basado en el factor más crítico
   if (looseTeethLoss === 'several') {
     return "La pérdida de varios dientes por movilidad indica una condición periodontal avanzada. Una evaluación profesional urgente es esencial antes de cualquier tratamiento.";
   }
@@ -102,11 +107,71 @@ const getPersonalizedAdvice = (
   return "Mantén tus buenos hábitos de higiene oral. Estás en el camino correcto para un tratamiento exitoso.";
 };
 
+// Función para detectar factores críticos
+interface DetectedFactor {
+  name: string;
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+}
+
+const getDetectedFactors = (
+  gumBleeding: string,
+  looseTeethLoss: string,
+  oralHygiene: string,
+  smoking?: string,
+  diabetes?: string,
+  bruxism?: string
+): DetectedFactor[] => {
+  const factors: DetectedFactor[] = [];
+
+  // Factores de encías
+  if (gumBleeding === 'frequently') {
+    factors.push({ name: 'Sangrado frecuente de encías', severity: 'high', description: 'Indica inflamación activa' });
+  } else if (gumBleeding === 'sometimes') {
+    factors.push({ name: 'Sangrado ocasional', severity: 'medium', description: 'Sugiere inflamación leve' });
+  }
+
+  if (looseTeethLoss === 'several') {
+    factors.push({ name: 'Pérdida dental múltiple por movilidad', severity: 'high', description: 'Condición periodontal avanzada' });
+  } else if (looseTeethLoss === '1-2') {
+    factors.push({ name: 'Pérdida dental previa por movilidad', severity: 'medium', description: 'Historial periodontal' });
+  }
+
+  if (oralHygiene === 'less-once') {
+    factors.push({ name: 'Higiene oral deficiente', severity: 'high', description: 'Requiere mejora urgente' });
+  } else if (oralHygiene === 'once') {
+    factors.push({ name: 'Higiene oral mejorable', severity: 'medium', description: 'Recomendamos 2+ veces/día' });
+  }
+
+  // Factores adicionales si están disponibles
+  if (smoking === '10-plus') {
+    factors.push({ name: 'Tabaquismo intenso', severity: 'high', description: '+10 cigarrillos/día' });
+  } else if (smoking === 'less-10') {
+    factors.push({ name: 'Tabaquismo moderado', severity: 'medium', description: 'Afecta cicatrización' });
+  }
+
+  if (diabetes === 'uncontrolled') {
+    factors.push({ name: 'Diabetes no controlada', severity: 'high', description: 'Requiere estabilización' });
+  } else if (diabetes === 'controlled') {
+    factors.push({ name: 'Diabetes controlada', severity: 'low', description: 'Buen control glucémico' });
+  }
+
+  if (bruxism === 'yes') {
+    factors.push({ name: 'Bruxismo', severity: 'medium', description: 'Considerar férula protectora' });
+  }
+
+  return factors;
+};
+
 const IRPResultScreen = ({
   gumBleeding,
   looseTeethLoss,
   oralHygiene,
+  smoking,
+  diabetes,
+  bruxism,
   patientName = "Paciente",
+  patientEmail,
   onPaymentClick,
   onFreeReportClick
 }: IRPResultScreenProps) => {
@@ -114,6 +179,30 @@ const IRPResultScreen = ({
   const riskInfo = getRiskLevel(score);
   const interpretation = getInterpretation(score);
   const advice = getPersonalizedAdvice(gumBleeding, looseTeethLoss, oralHygiene);
+  const detectedFactors = getDetectedFactors(gumBleeding, looseTeethLoss, oralHygiene, smoking, diabetes, bruxism);
+  
+  // Guardar datos en localStorage para pasarlos después del pago
+  useEffect(() => {
+    localStorage.setItem('implantx_irp_data', JSON.stringify({
+      score,
+      riskLevel: riskInfo.level,
+      interpretation,
+      advice,
+      gumBleeding,
+      looseTeethLoss,
+      oralHygiene,
+      patientName,
+      patientEmail
+    }));
+  }, [score, riskInfo.level, interpretation, advice, gumBleeding, looseTeethLoss, oralHygiene, patientName, patientEmail]);
+
+  const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
+    switch (severity) {
+      case 'high': return 'bg-red-500/10 border-red-500/30 text-red-600';
+      case 'medium': return 'bg-amber-500/10 border-amber-500/30 text-amber-600';
+      case 'low': return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600';
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -124,8 +213,11 @@ const IRPResultScreen = ({
           <span className="text-sm font-medium text-primary">Análisis Completado</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-          ¡Hemos analizado la salud de tu boca!
+          ¡Hemos analizado tus factores clave!
         </h2>
+        <p className="text-muted-foreground text-sm">
+          {patientName}, estos son los resultados de tu evaluación periodontal
+        </p>
       </div>
 
       {/* Card de resultado principal */}
@@ -193,6 +285,35 @@ const IRPResultScreen = ({
           </div>
         </div>
 
+        {/* Factores detectados */}
+        {detectedFactors.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              Factores detectados en tu perfil:
+            </p>
+            <div className="grid gap-2">
+              {detectedFactors.slice(0, 3).map((factor, i) => (
+                <div 
+                  key={i}
+                  className={cn(
+                    "flex items-center justify-between p-3 rounded-lg border",
+                    getSeverityColor(factor.severity)
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    {factor.severity === 'high' && <AlertCircle className="w-4 h-4" />}
+                    {factor.severity === 'medium' && <AlertTriangle className="w-4 h-4" />}
+                    {factor.severity === 'low' && <CheckCircle2 className="w-4 h-4" />}
+                    <span className="font-medium text-sm">{factor.name}</span>
+                  </div>
+                  <span className="text-xs opacity-80">{factor.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Interpretación */}
         <div className="bg-muted/30 rounded-xl p-4 space-y-2">
           <p className="text-sm font-semibold text-foreground">Interpretación:</p>
@@ -209,17 +330,42 @@ const IRPResultScreen = ({
         </div>
       </div>
 
+      {/* Sección de valor - Qué incluye el plan de acción */}
+      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-foreground">Plan de Acción Completo</h3>
+            <p className="text-xs text-muted-foreground">Todo lo que necesitas para mejorar tu pronóstico</p>
+          </div>
+        </div>
+        <div className="grid gap-2">
+          {[
+            "Análisis detallado de todos tus factores de riesgo",
+            "Tu Potencial de Mejora: cuánto puedes aumentar tu éxito",
+            "Plan paso a paso con acciones concretas",
+            "Recomendaciones personalizadas de especialistas",
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <span className="text-foreground/80">{item}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Botones de acción */}
       <div className="space-y-3">
-        {/* Botón principal - Pago */}
-        <Button
-          onClick={onPaymentClick}
-          className="w-full h-14 text-base font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/25 transition-all group"
-          size="lg"
-        >
-          <CreditCard className="w-5 h-5 mr-2" />
-          Obtener mi Plan de Acción Completo por $14.900
-        </Button>
+        {/* Botón principal - MercadoPago */}
+        <div className="space-y-2">
+          <MercadoPagoButton preferenceId={MERCADOPAGO_PREFERENCES.basic} />
+          <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
+            <CreditCard className="w-3 h-3" />
+            Hasta 3 cuotas sin interés con MercadoPago
+          </p>
+        </div>
 
         {/* Botón secundario - Gratis */}
         <Button
@@ -233,9 +379,10 @@ const IRPResultScreen = ({
       </div>
 
       {/* Nota de confianza */}
-      <p className="text-xs text-center text-muted-foreground/60">
-        Pago seguro con MercadoPago. Tu información está protegida.
-      </p>
+      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/60">
+        <Shield className="w-4 h-4" />
+        <span>Pago 100% seguro. Tu información está protegida.</span>
+      </div>
     </div>
   );
 };
