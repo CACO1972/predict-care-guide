@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Tu voz personalizada de ElevenLabs
+const VOICE_ID = "Fsdz1aPwolY7XrgjZLxC";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -12,10 +15,10 @@ serve(async (req) => {
 
   try {
     const { text } = await req.json();
-    const OPENAI_API_KEY = Deno.env.get("OPENAI");
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI API key is not configured");
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error("ELEVENLABS_API_KEY is not configured");
     }
 
     if (!text) {
@@ -24,27 +27,32 @@ serve(async (req) => {
 
     console.log("Generating TTS for text:", text.substring(0, 50) + "...");
 
-    // Using OpenAI TTS with "onyx" voice - deep male voice, professional and warm
-    // Works well for Spanish with neutral accent
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "tts-1",
-        input: text,
-        voice: "onyx", // Deep male voice - professional, empathetic
-        response_format: "mp3",
-        speed: 0.95, // Slightly slower for clarity in Spanish
-      }),
-    });
+    // Using ElevenLabs TTS with your custom voice
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2", // Best for Spanish
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI TTS API error:", response.status, errorText);
-      throw new Error(`OpenAI TTS API error: ${response.status}`);
+      console.error("ElevenLabs TTS API error:", response.status, errorText);
+      throw new Error(`ElevenLabs TTS API error: ${response.status}`);
     }
 
     const audioBuffer = await response.arrayBuffer();
