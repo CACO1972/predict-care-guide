@@ -508,8 +508,9 @@ const PatientQuestionnaire = () => {
       case 'density-q1':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar message="Comencemos con tu historial médico." userName={userProfile.name} />
-            <QuestionCard
+            <SyncedQuestionBlock
+              rioMessage="Comencemos con tu historial médico."
+              userName={userProfile.name}
               question="¿Alguna vez has tenido una fractura de hueso (ej. muñeca, cadera, columna) después de una caída o golpe menor como adulto?"
               type="radio"
               options={[
@@ -523,7 +524,6 @@ const PatientQuestionnaire = () => {
                 handleAnswerWithRioFeedback('fractures', value as string, getNextStepFunction('density-q1'));
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
           </div>
         );
@@ -531,8 +531,9 @@ const PatientQuestionnaire = () => {
       case 'density-q2':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar message="Ahora, sobre algunos cambios que quizás hayas notado." userName={userProfile.name} />
-            <QuestionCard
+            <SyncedQuestionBlock
+              rioMessage="Ahora, sobre algunos cambios que quizás hayas notado."
+              userName={userProfile.name}
               question="¿Has notado una disminución en tu estatura en los últimos años?"
               type="radio"
               options={[
@@ -546,7 +547,6 @@ const PatientQuestionnaire = () => {
                 handleAnswerWithRioFeedback('heightLoss', value as string, getNextStepFunction('density-q2'));
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
           </div>
         );
@@ -554,8 +554,9 @@ const PatientQuestionnaire = () => {
       case 'density-q3':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar message="La genética también juega un papel importante." userName={userProfile.name} />
-            <QuestionCard
+            <SyncedQuestionBlock
+              rioMessage="La genética también juega un papel importante."
+              userName={userProfile.name}
               question="¿Alguno de tus padres fue diagnosticado con osteoporosis o sufrió una fractura de cadera después de una caída leve?"
               type="radio"
               options={[
@@ -569,7 +570,6 @@ const PatientQuestionnaire = () => {
                 handleAnswerWithRioFeedback('familyHistory', value as string, getNextStepFunction('density-q3'));
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
           </div>
         );
@@ -577,8 +577,9 @@ const PatientQuestionnaire = () => {
       case 'density-q4':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar message="Ciertos medicamentos pueden afectar la salud de los huesos." userName={userProfile.name} />
-            <QuestionCard
+            <SyncedQuestionBlock
+              rioMessage="Ciertos medicamentos pueden afectar la salud de los huesos."
+              userName={userProfile.name}
               question="¿Has tomado o tomas actualmente medicamentos corticoides (como prednisona o cortisona) de forma regular por más de 3 meses?"
               type="radio"
               options={[
@@ -592,7 +593,6 @@ const PatientQuestionnaire = () => {
                 handleAnswerWithRioFeedback('corticosteroids', value as string, getNextStepFunction('density-q4'));
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
           </div>
         );
@@ -600,8 +600,9 @@ const PatientQuestionnaire = () => {
       case 'density-q5':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar message="Finalmente, algunos hábitos de vida." userName={userProfile.name} />
-            <QuestionCard
+            <SyncedQuestionBlock
+              rioMessage="Finalmente, algunos hábitos de vida."
+              userName={userProfile.name}
               question="¿Consumes más de dos bebidas alcohólicas al día de forma habitual?"
               type="radio"
               options={[
@@ -614,7 +615,6 @@ const PatientQuestionnaire = () => {
                 handleAnswerWithRioFeedback('alcohol', value as string, getNextStepFunction('density-q5'));
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
           </div>
         );
