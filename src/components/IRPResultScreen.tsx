@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, AlertCircle, Lightbulb, FileText, CreditCard, TrendingUp, Shield, Zap } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, Lightbulb, FileText, CreditCard, TrendingUp, Shield, Zap, Lock, Eye, Sparkles } from "lucide-react";
 import RioAvatar from "@/components/RioAvatar";
 import MercadoPagoButton from "@/components/MercadoPagoButton";
+import CountdownOffer from "@/components/CountdownOffer";
+import LockedPremiumSection from "@/components/LockedPremiumSection";
+import ExitIntentPopup from "@/components/ExitIntentPopup";
 import { cn } from "@/lib/utils";
-import { MERCADOPAGO_PREFERENCES } from "@/types/reportLevels";
 
 interface IRPResultScreenProps {
   gumBleeding: 'never' | 'sometimes' | 'frequently';
@@ -48,23 +49,23 @@ const getRiskLevel = (score: number): { level: string; color: string; bgColor: s
   if (score <= 40) {
     return {
       level: 'Riesgo Alto',
-      color: 'text-red-500',
-      bgColor: 'bg-red-500',
-      icon: <AlertCircle className="w-6 h-6 text-red-500" />
+      color: 'text-destructive',
+      bgColor: 'bg-destructive',
+      icon: <AlertCircle className="w-6 h-6 text-destructive" />
     };
   } else if (score <= 70) {
     return {
       level: 'Riesgo Moderado',
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-500',
-      icon: <AlertTriangle className="w-6 h-6 text-amber-500" />
+      color: 'text-warning',
+      bgColor: 'bg-warning',
+      icon: <AlertTriangle className="w-6 h-6 text-warning" />
     };
   } else {
     return {
       level: 'Riesgo Bajo',
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500',
-      icon: <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+      color: 'text-success',
+      bgColor: 'bg-success',
+      icon: <CheckCircle2 className="w-6 h-6 text-success" />
     };
   }
 };
@@ -198,14 +199,21 @@ const IRPResultScreen = ({
 
   const getSeverityColor = (severity: 'high' | 'medium' | 'low') => {
     switch (severity) {
-      case 'high': return 'bg-red-500/10 border-red-500/30 text-red-600';
-      case 'medium': return 'bg-amber-500/10 border-amber-500/30 text-amber-600';
-      case 'low': return 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600';
+      case 'high': return 'bg-destructive/10 border-destructive/30 text-destructive';
+      case 'medium': return 'bg-warning/10 border-warning/30 text-warning';
+      case 'low': return 'bg-success/10 border-success/30 text-success';
     }
   };
 
+  // Only show first 2 factors for free, rest are blurred
+  const visibleFactors = detectedFactors.slice(0, 2);
+  const hiddenFactorsCount = Math.max(0, detectedFactors.length - 2);
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Exit Intent Popup */}
+      <ExitIntentPopup patientName={patientName} irpScore={score} />
+
       {/* Título principal */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
@@ -251,7 +259,7 @@ const IRPResultScreen = ({
                 strokeLinecap="round"
                 className={cn(
                   "transition-all duration-1000 ease-out",
-                  score <= 40 ? "text-red-500" : score <= 70 ? "text-amber-500" : "text-emerald-500"
+                  score <= 40 ? "text-destructive" : score <= 70 ? "text-warning" : "text-success"
                 )}
               />
             </svg>
@@ -264,7 +272,7 @@ const IRPResultScreen = ({
           {/* Nivel de riesgo */}
           <div className={cn(
             "inline-flex items-center gap-2 px-4 py-2 rounded-full",
-            score <= 40 ? "bg-red-500/10" : score <= 70 ? "bg-amber-500/10" : "bg-emerald-500/10"
+            score <= 40 ? "bg-destructive/10" : score <= 70 ? "bg-warning/10" : "bg-success/10"
           )}>
             {riskInfo.icon}
             <span className={cn("font-semibold", riskInfo.color)}>{riskInfo.level}</span>
@@ -277,23 +285,23 @@ const IRPResultScreen = ({
             <span>Alto Riesgo</span>
             <span>Bajo Riesgo</span>
           </div>
-          <div className="relative h-3 rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 overflow-hidden">
+          <div className="relative h-3 rounded-full bg-gradient-to-r from-destructive via-warning to-success overflow-hidden">
             <div 
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-foreground rounded-full shadow-md transition-all duration-1000"
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-background border-2 border-foreground rounded-full shadow-md transition-all duration-1000"
               style={{ left: `calc(${score}% - 8px)` }}
             />
           </div>
         </div>
 
-        {/* Factores detectados */}
-        {detectedFactors.length > 0 && (
+        {/* Factores detectados - mostrar solo 2, el resto blurred */}
+        {visibleFactors.length > 0 && (
           <div className="space-y-3">
             <p className="text-sm font-semibold text-foreground flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-primary" />
               Factores detectados en tu perfil:
             </p>
             <div className="grid gap-2">
-              {detectedFactors.slice(0, 3).map((factor, i) => (
+              {visibleFactors.map((factor, i) => (
                 <div 
                   key={i}
                   className={cn(
@@ -310,6 +318,29 @@ const IRPResultScreen = ({
                   <span className="text-xs opacity-80">{factor.description}</span>
                 </div>
               ))}
+              
+              {/* Hidden factors teaser */}
+              {hiddenFactorsCount > 0 && (
+                <div className="relative overflow-hidden rounded-lg border border-primary/30 bg-primary/5">
+                  <div className="blur-[6px] p-3 space-y-2 select-none pointer-events-none">
+                    {[1, 2].slice(0, hiddenFactorsCount).map(i => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-muted" />
+                          <div className="h-3 bg-muted rounded w-32" />
+                        </div>
+                        <div className="h-2 bg-muted rounded w-20" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-background/80 to-transparent">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30">
+                      <Lock className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-medium text-primary">+{hiddenFactorsCount} factores ocultos</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -330,11 +361,39 @@ const IRPResultScreen = ({
         </div>
       </div>
 
+      {/* LOCKED SECTIONS - Premium content blur */}
+      <div className="space-y-4">
+        <LockedPremiumSection 
+          title="Tu Potencial de Mejora"
+          description="Descubre cuánto puedes aumentar tus probabilidades de éxito"
+          blurIntensity="heavy"
+        />
+        
+        <LockedPremiumSection 
+          title="Plan de Acción Personalizado"
+          description="Acciones concretas paso a paso para mejorar tu caso"
+          blurIntensity="medium"
+        />
+      </div>
+
+      {/* COUNTDOWN OFFER */}
+      <CountdownOffer 
+        durationMinutes={120}
+        originalPrice={14990}
+        discountPercent={20}
+        variant="banner"
+      />
+
       {/* Sección de valor - Qué incluye el plan de acción */}
-      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-6 space-y-4">
+      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-2 border-primary/30 rounded-2xl p-6 space-y-4 relative overflow-hidden">
+        {/* Popular badge */}
+        <div className="absolute -top-1 -right-8 px-10 py-1 bg-primary text-primary-foreground text-[10px] font-bold rotate-45">
+          POPULAR
+        </div>
+        
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h3 className="font-bold text-foreground">Plan de Acción Completo</h3>
@@ -343,16 +402,23 @@ const IRPResultScreen = ({
         </div>
         <div className="grid gap-2">
           {[
-            "Análisis detallado de todos tus factores de riesgo",
+            "Análisis detallado de TODOS tus factores de riesgo",
             "Tu Potencial de Mejora: cuánto puedes aumentar tu éxito",
             "Plan paso a paso con acciones concretas",
             "Recomendaciones personalizadas de especialistas",
+            "Próximos pasos claros y ordenados",
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
               <span className="text-foreground/80">{item}</span>
             </div>
           ))}
+        </div>
+        
+        {/* Guarantee badge */}
+        <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-success/10 border border-success/20">
+          <Shield className="w-4 h-4 text-success" />
+          <span className="text-xs font-medium text-success">Garantía de devolución de 7 días</span>
         </div>
       </div>
 
@@ -360,7 +426,7 @@ const IRPResultScreen = ({
       <div className="space-y-3">
         {/* Botón principal - MercadoPago */}
         <div className="space-y-2">
-          <MercadoPagoButton preferenceId={MERCADOPAGO_PREFERENCES.basic} />
+          <MercadoPagoButton tier="basic" />
           <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
             <CreditCard className="w-3 h-3" />
             Hasta 3 cuotas sin interés con MercadoPago
