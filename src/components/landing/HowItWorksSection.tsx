@@ -1,79 +1,125 @@
-import { MessageCircle, Camera, ClipboardCheck, FileText } from "lucide-react";
+import { MessageCircle, Camera, ClipboardCheck, FileText, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const steps = [
   {
     icon: MessageCircle,
     step: "1",
-    title: "Responde preguntas",
-    description: "Río, nuestra IA, te guía con preguntas simples sobre tu salud bucal",
+    title: "Conversa con Río",
+    description: "Nuestra IA te hace preguntas simples sobre tu salud bucal en menos de 5 minutos",
+    highlight: "Sin términos técnicos",
   },
   {
     icon: Camera,
     step: "2",
-    title: "Sube una imagen",
-    description: "Foto de la zona afectada o radiografía (opcional en versión gratuita)",
+    title: "Sube una foto",
+    description: "Opcional: agrega una imagen de tu boca para un análisis más preciso",
     badge: "Opcional",
+    highlight: "Mejora la precisión",
   },
   {
     icon: ClipboardCheck,
     step: "3",
-    title: "Análisis inteligente",
-    description: "Evaluamos factores de riesgo basados en evidencia clínica",
+    title: "Análisis con IA",
+    description: "Evaluamos factores de riesgo basados en evidencia científica y guías clínicas",
+    highlight: "94% precisión",
   },
   {
     icon: FileText,
     step: "4",
-    title: "Recibe tu reporte",
-    description: "Obtén un informe personalizado con recomendaciones claras",
+    title: "Tu reporte listo",
+    description: "Recibe recomendaciones claras sobre si eres candidato y los próximos pasos",
+    highlight: "Al instante",
   },
 ];
 
 const HowItWorksSection = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="max-w-4xl mx-auto mb-12 sm:mb-16">
-      <h2 className="text-center text-lg sm:text-xl font-display text-foreground mb-2">
-        ¿Cómo funciona?
-      </h2>
-      <p className="text-center text-muted-foreground text-sm mb-8 sm:mb-10">
-        3 simples pasos para conocer tu candidatura
-      </p>
+    <div className="max-w-5xl mx-auto mb-16 sm:mb-24">
+      {/* Section Header */}
+      <div className="text-center mb-10 sm:mb-14">
+        <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary uppercase tracking-wider mb-4">
+          Proceso Simple
+        </span>
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-bold text-foreground mb-3">
+          ¿Cómo funciona?
+        </h2>
+        <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+          De la duda a la claridad en 4 pasos simples
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {steps.map((step, index) => (
-          <div
-            key={step.step}
-            className="relative p-4 sm:p-5 rounded-2xl bg-card/50 border border-border/50 hover:border-primary/30 transition-all duration-300 group"
-          >
-            {/* Step number */}
-            <div className="absolute -top-3 left-4 px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[0.65rem] sm:text-xs font-bold">
-              Paso {step.step}
-            </div>
+      {/* Steps Timeline */}
+      <div className="relative">
+        {/* Connection line - desktop */}
+        <div className="hidden lg:block absolute top-24 left-[10%] right-[10%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
 
-            {/* Optional badge */}
-            {"badge" in step && step.badge && (
-              <div className="absolute -top-3 right-4 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[0.6rem] font-medium border border-border">
-                {step.badge}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {steps.map((step, index) => (
+            <div
+              key={step.step}
+              className="relative group"
+            >
+              {/* Card */}
+              <div className="relative p-6 rounded-2xl bg-gradient-to-b from-card to-card/50 border border-border hover:border-primary/40 transition-all duration-500 hover:shadow-xl hover:shadow-primary/5 h-full">
+                {/* Step indicator */}
+                <div className="absolute -top-4 left-6 w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-110 transition-transform">
+                  {step.step}
+                </div>
+
+                {/* Optional badge */}
+                {"badge" in step && step.badge && (
+                  <div className="absolute -top-3 right-4 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-medium border border-border">
+                    {step.badge}
+                  </div>
+                )}
+
+                {/* Icon */}
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 mt-3 group-hover:bg-primary/20 transition-colors">
+                  <step.icon className="w-7 h-7 text-primary" />
+                </div>
+
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  {step.description}
+                </p>
+
+                {/* Highlight tag */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 border border-success/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                  <span className="text-[10px] sm:text-xs font-medium text-success">
+                    {step.highlight}
+                  </span>
+                </div>
               </div>
-            )}
 
-            {/* Icon */}
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3 mt-2 group-hover:bg-primary/20 transition-colors">
-              <step.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              {/* Arrow connector - mobile/tablet */}
+              {index < steps.length - 1 && (
+                <div className="flex justify-center py-2 lg:hidden">
+                  <ArrowRight className="w-5 h-5 text-primary/40 rotate-90 sm:rotate-0" />
+                </div>
+              )}
             </div>
+          ))}
+        </div>
+      </div>
 
-            <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1.5">
-              {step.title}
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              {step.description}
-            </p>
-
-            {/* Connector line for desktop */}
-            {index < steps.length - 1 && (
-              <div className="hidden sm:block absolute top-1/2 -right-3 w-6 h-px bg-gradient-to-r from-border to-transparent" />
-            )}
-          </div>
-        ))}
+      {/* Bottom CTA */}
+      <div className="text-center mt-10 sm:mt-14">
+        <button
+          onClick={() => navigate("/evaluacion")}
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-card border-2 border-primary/30 text-foreground font-semibold hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300 group"
+        >
+          <span>Comenzar ahora</span>
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
+        <p className="text-xs text-muted-foreground mt-3">
+          Solo toma 5 minutos · Es gratis
+        </p>
       </div>
     </div>
   );
