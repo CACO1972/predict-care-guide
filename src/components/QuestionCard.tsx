@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, ChevronRight, ArrowLeft } from "lucide-react";
+import { Info, ChevronRight, ArrowLeft, Volume2, FastForward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -21,6 +21,10 @@ interface QuestionCardProps {
   nextButtonText?: string;
   disabled?: boolean;
   hideNextButton?: boolean;
+  isAudioPlaying?: boolean;
+  isAudioFinished?: boolean;
+  isSkipAllowed?: boolean;
+  onSkipAudio?: () => void;
 }
 
 const QuestionCard = ({
@@ -35,9 +39,16 @@ const QuestionCard = ({
   clinicalNote,
   nextButtonText = "Continuar",
   disabled = false,
-  hideNextButton = false
+  hideNextButton = false,
+  isAudioPlaying = false,
+  isAudioFinished = true,
+  isSkipAllowed = true,
+  onSkipAudio
 }: QuestionCardProps) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  // Show options only when audio is finished OR skip is allowed and user clicked skip
+  const showOptions = isAudioFinished;
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && value && !disabled) {
@@ -61,6 +72,34 @@ const QuestionCard = ({
         <h3 className="text-lg font-semibold text-foreground leading-tight">
           {question}
         </h3>
+        
+        {/* Audio playing state - show when waiting for audio */}
+        {!showOptions && (type === 'radio' || type === 'gender' || type === 'checkbox') && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
+              <Volume2 className="w-5 h-5 text-primary animate-pulse" />
+              <span className="text-sm font-medium">Escucha a Río...</span>
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+            
+            {/* Skip button - appears after 3 seconds */}
+            {isSkipAllowed && onSkipAudio && (
+              <Button
+                onClick={onSkipAudio}
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground hover:text-foreground transition-all animate-fade-in"
+              >
+                <FastForward className="w-4 h-4 mr-2" />
+                Saltar audio
+              </Button>
+            )}
+          </div>
+        )}
         
         {type === 'text' && (
           <Input
@@ -87,11 +126,11 @@ const QuestionCard = ({
           />
         )}
 
-        {type === 'gender' && (
+        {type === 'gender' && showOptions && (
           <RadioGroup
             value={value as string}
             onValueChange={handleRadioChange}
-            className="space-y-2"
+            className="space-y-2 animate-fade-in"
           >
             {[
               { value: 'male', label: 'Masculino' },
@@ -125,11 +164,11 @@ const QuestionCard = ({
           </RadioGroup>
         )}
 
-        {type === 'radio' && options && (
+        {type === 'radio' && options && showOptions && (
           <RadioGroup
             value={value as string}
             onValueChange={handleRadioChange}
-            className="space-y-2"
+            className="space-y-2 animate-fade-in"
           >
             {options.map((option) => (
               <div 
@@ -159,8 +198,8 @@ const QuestionCard = ({
           </RadioGroup>
         )}
 
-        {type === 'checkbox' && options && (
-          <div className="space-y-2">
+        {type === 'checkbox' && options && showOptions && (
+          <div className="space-y-2 animate-fade-in">
             {options.map((option) => {
               const selectedValues = (value as string[]) || [];
               const isChecked = selectedValues.includes(option.value);

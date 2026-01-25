@@ -12,6 +12,8 @@ interface RioAvatarProps {
   className?: string;
   autoSpeak?: boolean;
   customAudioUrl?: string;
+  onAudioStart?: () => void;
+  onAudioEnd?: () => void;
 }
 
 const RioAvatar = ({ 
@@ -20,7 +22,9 @@ const RioAvatar = ({
   expression = 'encouraging', 
   className,
   autoSpeak = true,
-  customAudioUrl
+  customAudioUrl,
+  onAudioStart,
+  onAudioEnd
 }: RioAvatarProps) => {
   const { isPlaying: isTTSPlaying, isLoading, speak, stop } = useRioTTS();
   const lastSpokenRef = useRef<string>("");
@@ -39,8 +43,14 @@ const RioAvatar = ({
       audioRef.current.pause();
     }
     audioRef.current = new Audio(customAudioUrl);
-    audioRef.current.onplay = () => setIsCustomPlaying(true);
-    audioRef.current.onended = () => setIsCustomPlaying(false);
+    audioRef.current.onplay = () => {
+      setIsCustomPlaying(true);
+      onAudioStart?.();
+    };
+    audioRef.current.onended = () => {
+      setIsCustomPlaying(false);
+      onAudioEnd?.();
+    };
     audioRef.current.onpause = () => setIsCustomPlaying(false);
     audioRef.current.play().catch(console.error);
   };
@@ -57,13 +67,16 @@ const RioAvatar = ({
   useEffect(() => {
     if (autoSpeak && processedMessage && processedMessage !== lastSpokenRef.current) {
       lastSpokenRef.current = processedMessage;
+      onAudioStart?.();
       if (customAudioUrl) {
         playCustomAudio();
       } else {
-        speak(processedMessage);
+        speak(processedMessage).then(() => {
+          onAudioEnd?.();
+        });
       }
     }
-  }, [processedMessage, autoSpeak, speak, customAudioUrl]);
+  }, [processedMessage, autoSpeak, speak, customAudioUrl, onAudioStart, onAudioEnd]);
 
   // Cleanup on unmount
   useEffect(() => {
