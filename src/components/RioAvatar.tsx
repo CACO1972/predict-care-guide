@@ -36,13 +36,15 @@ const RioAvatar = ({
 
   const isPlaying = customAudioUrl ? isCustomPlaying : isTTSPlaying;
 
-  // Play custom audio
+  // Play custom audio - always unmuted as part of the experience
   const playCustomAudio = () => {
     if (!customAudioUrl) return;
     if (audioRef.current) {
       audioRef.current.pause();
     }
     audioRef.current = new Audio(customAudioUrl);
+    audioRef.current.muted = false; // Ensure audio is never muted
+    audioRef.current.volume = 1.0; // Full volume
     audioRef.current.onplay = () => {
       setIsCustomPlaying(true);
       onAudioStart?.();
