@@ -143,4 +143,5 @@ export const REPORT_PRICES = {
 export const MERCADOPAGO_PREFERENCES = {
   basic: '130000413-17acabf6-744b-41e6-be85-2488b518c274',
   premium: '130000413-5c54f887-998b-451f-9d14-21d8a1822264',
+  upgrade: '130000413-c1e3a2b4-567d-489e-bc12-3456789abcde', // Upgrade from basic to premium
 } as const;
