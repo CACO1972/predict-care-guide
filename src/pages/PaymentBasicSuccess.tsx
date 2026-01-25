@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { REPORT_PRICES } from "@/types/reportLevels";
 import MercadoPagoButton from "@/components/MercadoPagoButton";
+import { trackPurchase } from "@/utils/metaPixel";
 
 const PaymentBasicSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -26,7 +27,17 @@ const PaymentBasicSuccess = () => {
     if (email) {
       setUserEmail(email);
     }
-  }, [email]);
+    
+    // Track Purchase event for Basic report
+    trackPurchase({
+      value: REPORT_PRICES.basic,
+      currency: 'CLP',
+      content_name: 'Plan de Acción ImplantX',
+      content_ids: ['implantx-basic'],
+      content_type: 'product',
+      transaction_id: paymentId || undefined
+    });
+  }, [email, paymentId]);
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('es-CL');

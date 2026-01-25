@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { trackPurchase } from "@/utils/metaPixel";
 
 const PaymentPremiumSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -47,7 +48,17 @@ const PaymentPremiumSuccess = () => {
       setPatientData(prev => ({ ...prev, email: emailParam }));
       setUserEmail(emailParam);
     }
-  }, [searchParams]);
+
+    // Track Purchase event - user arrived at success page
+    trackPurchase({
+      value: 29990,
+      currency: 'CLP',
+      content_name: 'Informe Premium ImplantX',
+      content_ids: ['implantx-premium'],
+      content_type: 'product',
+      transaction_id: paymentId || undefined
+    });
+  }, [searchParams, paymentId]);
 
   const zones = [
     { id: 'max-frontal', label: 'Maxilar Superior - Frontal', icon: '🦷' },

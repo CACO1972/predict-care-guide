@@ -7,6 +7,7 @@ import { Mail, Phone, Loader2, Shield, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { trackLead } from "@/utils/metaPixel";
 
 interface LeadCaptureModalProps {
   isOpen: boolean;
@@ -68,6 +69,13 @@ const LeadCaptureModal = ({ isOpen, onSubmit, patientName }: LeadCaptureModalPro
         setIsSubmitting(false);
         return;
       }
+      
+      // Track Lead event in Meta Pixel
+      trackLead({
+        content_name: 'ImplantX Questionnaire Lead',
+        value: 0,
+        currency: 'CLP'
+      });
       
       onSubmit({ email, phone });
     } catch (err) {
