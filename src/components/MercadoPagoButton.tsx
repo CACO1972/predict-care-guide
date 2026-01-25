@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { MERCADOPAGO_PREFERENCES } from "@/types/reportLevels";
+import { MERCADOPAGO_PREFERENCES, REPORT_PRICES } from "@/types/reportLevels";
+import { trackInitiateCheckout } from "@/utils/metaPixel";
 
 interface MercadoPagoButtonProps {
   preferenceId?: string;
@@ -19,6 +20,20 @@ const MercadoPagoButton = ({ preferenceId, tier, className }: MercadoPagoButtonP
     if (document.getElementById(scriptId)) {
       return;
     }
+
+    // Track InitiateCheckout event when button renders (user is about to pay)
+    const priceMap = {
+      basic: 14900,
+      premium: 29990,
+      upgrade: 15090
+    };
+    trackInitiateCheckout({
+      value: tier ? priceMap[tier] : priceMap.basic,
+      currency: 'CLP',
+      content_name: tier === 'premium' ? 'Informe Premium' : tier === 'upgrade' ? 'Upgrade a Premium' : 'Informe Básico',
+      content_ids: [`implantx-${tier || 'basic'}`],
+      num_items: 1
+    });
 
     const script = document.createElement("script");
     script.id = scriptId;
