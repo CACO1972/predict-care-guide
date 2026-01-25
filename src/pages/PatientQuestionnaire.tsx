@@ -6,6 +6,7 @@ import RioAvatarExpressive from "@/components/RioAvatarExpressive";
 import RioWelcomeAvatar from "@/components/RioWelcomeAvatar";
 import ProgressBar from "@/components/ProgressBar";
 import QuestionCard from "@/components/QuestionCard";
+import SyncedQuestionBlock from "@/components/SyncedQuestionBlock";
 import ReportPreview from "@/components/ReportPreview";
 import ImageUpload from "@/components/ImageUpload";
 import AnswersSummary from "@/components/AnswersSummary";
@@ -646,13 +647,10 @@ const PatientQuestionnaire = () => {
       case 'habits':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar 
-              message={`Perfecto, ${userProfile.name}. Hablemos ahora de algunos hábitos. Tu honestidad es clave para darte el mejor tratamiento posible.`}
+            <SyncedQuestionBlock 
+              rioMessage={`Perfecto, ${userProfile.name}. Hablemos ahora de algunos hábitos. Tu honestidad es clave para darte el mejor tratamiento posible.`}
               userName={userProfile.name}
               customAudioUrl="/audio/rio-fuma.mp3"
-            />
-            {/* Pregunta 1: Fumas */}
-            <QuestionCard
               question="1. ¿Fumas actualmente?"
               type="radio"
               options={[
@@ -665,7 +663,6 @@ const PatientQuestionnaire = () => {
                 setImplantAnswers({ ...implantAnswers, smoking: value as any });
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
             {/* Pregunta 2: Diabetes */}
             {implantAnswers.smoking && (
@@ -711,11 +708,9 @@ const PatientQuestionnaire = () => {
       case 'gum-health':
         return (
           <div className="space-y-6 animate-fade-in">
-            <RioAvatar 
-              message="Veamos ahora la salud de tus encías y tu higiene oral."
+            <SyncedQuestionBlock 
+              rioMessage="Veamos ahora la salud de tus encías y tu higiene oral."
               userName={userProfile.name}
-            />
-            <QuestionCard
               question="1. ¿Sangran tus encías cuando te cepillas los dientes?"
               type="radio"
               options={[
@@ -728,7 +723,6 @@ const PatientQuestionnaire = () => {
                 setImplantAnswers({ ...implantAnswers, gumBleeding: value as any });
               }}
               onNext={() => {}}
-              hideNextButton={true}
             />
             {implantAnswers.gumBleeding && (
               <QuestionCard
