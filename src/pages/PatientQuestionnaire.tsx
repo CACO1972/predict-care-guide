@@ -645,8 +645,14 @@ const PatientQuestionnaire = () => {
 
       // BLOQUE 2: Hábitos (Fumas, Diabetes, Bruxismo)
       case 'habits':
+        // Determinar qué sub-pregunta mostrar basado en las respuestas actuales
+        const showDiabetesQuestion = implantAnswers.smoking !== undefined;
+        const showBruxismQuestion = implantAnswers.smoking !== undefined && implantAnswers.diabetes !== undefined;
+        const allHabitsAnswered = implantAnswers.smoking !== undefined && implantAnswers.diabetes !== undefined && implantAnswers.bruxism !== undefined;
+        
         return (
           <div className="space-y-6 animate-fade-in">
+            {/* Pregunta 1: Cigarrillo */}
             <SyncedQuestionBlock 
               rioMessage={`Perfecto, ${userProfile.name}. Hablemos ahora de algunos hábitos. Tu honestidad es clave para darte el mejor tratamiento posible.`}
               userName={userProfile.name}
@@ -660,46 +666,64 @@ const PatientQuestionnaire = () => {
               ]}
               value={implantAnswers.smoking}
               onChange={(value) => {
-                setImplantAnswers({ ...implantAnswers, smoking: value as any });
+                setImplantAnswers(prev => ({ ...prev, smoking: value as any }));
               }}
               onNext={() => {}}
             />
-            {/* Pregunta 2: Diabetes */}
-            {implantAnswers.smoking && (
-              <QuestionCard
-                question="2. ¿Tienes diabetes?"
-                type="radio"
-                options={[
-                  { value: 'no', label: 'No' },
-                  { value: 'controlled', label: 'Sí, y está controlada' },
-                  { value: 'uncontrolled', label: 'Sí, y no está bien controlada' },
-                ]}
-                value={implantAnswers.diabetes}
-                onChange={(value) => {
-                  setImplantAnswers({ ...implantAnswers, diabetes: value as any });
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
+            
+            {/* Pregunta 2: Diabetes - aparece cuando smoking tiene valor */}
+            {showDiabetesQuestion && (
+              <div className="animate-fade-in">
+                <QuestionCard
+                  question="2. ¿Tienes diabetes?"
+                  type="radio"
+                  options={[
+                    { value: 'no', label: 'No' },
+                    { value: 'controlled', label: 'Sí, y está controlada' },
+                    { value: 'uncontrolled', label: 'Sí, y no está bien controlada' },
+                  ]}
+                  value={implantAnswers.diabetes}
+                  onChange={(value) => {
+                    setImplantAnswers(prev => ({ ...prev, diabetes: value as any }));
+                  }}
+                  onNext={() => {}}
+                  hideNextButton={true}
+                />
+              </div>
             )}
-            {/* Pregunta 3: Bruxismo */}
-            {implantAnswers.diabetes && (
-              <QuestionCard
-                question="3. ¿Aprietas o rechinas los dientes?"
-                type="radio"
-                options={[
-                  { value: 'no', label: 'No' },
-                  { value: 'unsure', label: 'No estoy seguro/a' },
-                  { value: 'yes', label: 'Sí' },
-                ]}
-                value={implantAnswers.bruxism}
-                onChange={(value) => {
-                  setImplantAnswers({ ...implantAnswers, bruxism: value as any });
-                  handleAnswerWithRioFeedback('bruxism', value as string, getNextStepFunction('habits'));
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
+            
+            {/* Pregunta 3: Bruxismo - aparece cuando diabetes tiene valor */}
+            {showBruxismQuestion && (
+              <div className="animate-fade-in">
+                <QuestionCard
+                  question="3. ¿Aprietas o rechinas los dientes?"
+                  type="radio"
+                  options={[
+                    { value: 'no', label: 'No' },
+                    { value: 'unsure', label: 'No estoy seguro/a' },
+                    { value: 'yes', label: 'Sí' },
+                  ]}
+                  value={implantAnswers.bruxism}
+                  onChange={(value) => {
+                    setImplantAnswers(prev => ({ ...prev, bruxism: value as any }));
+                  }}
+                  onNext={() => {}}
+                  hideNextButton={true}
+                />
+              </div>
+            )}
+            
+            {/* Botón para continuar cuando todas están respondidas */}
+            {allHabitsAnswered && (
+              <div className="animate-fade-in pt-4">
+                <Button 
+                  onClick={() => setStep('gum-health')}
+                  size="lg" 
+                  className="w-full h-12 text-base font-medium rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all"
+                >
+                  Continuar →
+                </Button>
+              </div>
             )}
           </div>
         );
