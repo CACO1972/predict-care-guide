@@ -73,9 +73,8 @@ const RioAvatar = ({
       if (customAudioUrl) {
         playCustomAudio();
       } else {
-        speak(processedMessage).then(() => {
-          onAudioEnd?.();
-        });
+        // No custom audio and no TTS available - just show message silently
+        onAudioEnd?.();
       }
     }
   }, [processedMessage, autoSpeak, speak, customAudioUrl, onAudioStart, onAudioEnd]);
@@ -94,13 +93,8 @@ const RioAvatar = ({
       } else {
         playCustomAudio();
       }
-    } else {
-      if (isTTSPlaying) {
-        stop();
-      } else {
-        speak(processedMessage);
-      }
     }
+    // If no customAudioUrl, audio control is hidden/disabled
   };
 
   return (
@@ -128,6 +122,7 @@ const RioAvatar = ({
             </p>
             
             {/* Audio control button */}
+            {customAudioUrl && (
             <button
               onClick={handleAudioToggle}
               disabled={isLoading}
@@ -146,6 +141,7 @@ const RioAvatar = ({
                 <VolumeX className="w-4 h-4" />
               )}
             </button>
+            )}
           </div>
           <p className="text-foreground leading-relaxed text-base">{processedMessage}</p>
         </div>

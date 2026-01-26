@@ -730,8 +730,14 @@ const PatientQuestionnaire = () => {
 
       // BLOQUE 3: Salud de encías (3 preguntas)
       case 'gum-health':
+        // Determinar qué sub-pregunta mostrar basado en las respuestas actuales
+        const showLooseTeethQuestion = implantAnswers.gumBleeding !== undefined;
+        const showOralHygieneQuestion = implantAnswers.gumBleeding !== undefined && implantAnswers.looseTeethLoss !== undefined;
+        const allGumHealthAnswered = implantAnswers.gumBleeding !== undefined && implantAnswers.looseTeethLoss !== undefined && implantAnswers.oralHygiene !== undefined;
+        
         return (
           <div className="space-y-6 animate-fade-in">
+            {/* Pregunta 1: Sangrado de encías */}
             <SyncedQuestionBlock 
               rioMessage="Veamos ahora la salud de tus encías y tu higiene oral."
               userName={userProfile.name}
@@ -744,11 +750,14 @@ const PatientQuestionnaire = () => {
               ]}
               value={implantAnswers.gumBleeding}
               onChange={(value) => {
-                setImplantAnswers({ ...implantAnswers, gumBleeding: value as any });
+                setImplantAnswers(prev => ({ ...prev, gumBleeding: value as any }));
               }}
               onNext={() => {}}
             />
-            {implantAnswers.gumBleeding && (
+            
+            {/* Pregunta 2: Dientes sueltos - aparece cuando gumBleeding tiene valor */}
+            {showLooseTeethQuestion && (
+              <div className="animate-fade-in">
               <QuestionCard
                 question="2. ¿Has perdido algún diente porque se movía o se 'soltó' solo, sin causa aparente como un golpe o caries grande?"
                 type="radio"
@@ -759,13 +768,17 @@ const PatientQuestionnaire = () => {
                 ]}
                 value={implantAnswers.looseTeethLoss}
                 onChange={(value) => {
-                  setImplantAnswers({ ...implantAnswers, looseTeethLoss: value as any });
+                  setImplantAnswers(prev => ({ ...prev, looseTeethLoss: value as any }));
                 }}
                 onNext={() => {}}
                 hideNextButton={true}
               />
+              </div>
             )}
-            {implantAnswers.looseTeethLoss && (
+            
+            {/* Pregunta 3: Higiene oral - aparece cuando looseTeethLoss tiene valor */}
+            {showOralHygieneQuestion && (
+              <div className="animate-fade-in">
               <QuestionCard
                 question="3. ¿Cuántas veces al día te cepillas los dientes?"
                 type="radio"
@@ -776,12 +789,27 @@ const PatientQuestionnaire = () => {
                 ]}
                 value={implantAnswers.oralHygiene}
                 onChange={(value) => {
-                  setImplantAnswers({ ...implantAnswers, oralHygiene: value as any });
-                  handleAnswerWithRioFeedback('oralHygiene', value as string, getNextStepFunction('gum-health'));
+                  setImplantAnswers(prev => ({ ...prev, oralHygiene: value as any }));
                 }}
                 onNext={() => {}}
                 hideNextButton={true}
               />
+              </div>
+            )}
+            
+            {/* Botón para continuar cuando todas están respondidas */}
+            {allGumHealthAnswered && (
+              <div className="animate-fade-in pt-4">
+                <Button 
+                  onClick={() => {
+                    calculateAndShowIRP();
+                  }}
+                  size="lg" 
+                  className="w-full h-12 text-base font-medium rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all"
+                >
+                  Ver Mi Resultado →
+                </Button>
+              </div>
             )}
           </div>
         );
