@@ -82,11 +82,11 @@ const HeroSection = () => {
           {/* Main Headline */}
           <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight mb-4 sm:mb-6 leading-[1.1]">
             <span className="bg-gradient-to-b from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-              ¿Puedo usar implantes?
+              ¿Vives lejos y necesitas implantes
             </span>
             <br />
             <span className="bg-gradient-to-r from-primary via-primary to-primary/80 bg-clip-text text-transparent">
-              Descúbrelo en 2 minutos
+              pero no sabes si son para ti?
             </span>
           </h1>
 
