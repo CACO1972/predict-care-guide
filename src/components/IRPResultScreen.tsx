@@ -433,6 +433,21 @@ const IRPResultScreen = ({
           </p>
         </div>
 
+        {/* DEV: Bypass de pago para testing */}
+        {import.meta.env.DEV && (
+          <Button
+            onClick={() => {
+              // Simular navegación a página de éxito
+              window.location.href = `/gracias-basico?payment_id=TEST-${Date.now()}&name=${encodeURIComponent(patientName)}&email=${encodeURIComponent(patientEmail || 'test@test.com')}`;
+            }}
+            variant="outline"
+            className="w-full h-12 text-sm font-medium rounded-xl border-dashed border-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            [DEV] Bypass pago → Ver página de éxito
+          </Button>
+        )}
+
         {/* Botón secundario - Gratis */}
         <Button
           onClick={onFreeReportClick}
