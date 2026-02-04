@@ -60,13 +60,15 @@ export type QuestionnaireStep =
   | 'density-q4'
   | 'density-q5'
   | 'density-complete'
-  | 'habits' // Bloque 2: fumas, diabetes, bruxismo
-  | 'gum-health' // Bloque 3: salud encías (3 preguntas)
+  // Bloque 2: Hábitos (una página por pregunta)
+  | 'habits-smoking'
+  | 'habits-diabetes'
+  | 'habits-bruxism'
+  // Bloque 3: Salud encías (una página por pregunta)
+  | 'gum-bleeding'
+  | 'gum-loose-teeth'
+  | 'gum-hygiene'
   | 'irp-result' // Pantalla de resultado IRP (punto de quiebre)
   | 'email-capture' // Captura de email para informe gratis
-  // === PREGUNTAS OCULTAS (se reactivarán para usuarios premium) ===
-  // | 'tooth-loss' // Bloque 4: causa, tiempo, zonas (OCULTO)
-  // | 'odontogram' // Subir imagen (OCULTO)
-  // | 'summary' // Resumen (OCULTO)
   | 'processing'
   | 'results';

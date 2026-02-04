@@ -93,7 +93,9 @@ const PatientQuestionnaire = () => {
   const getPreviousStep = (): QuestionnaireStep | null => {
     const baseSteps: QuestionnaireStep[] = ['welcome', 'name', 'demographics'];
     const densitySteps: QuestionnaireStep[] = ['density-intro', 'density-q1', 'density-q2', 'density-q3', 'density-q4', 'density-q5', 'density-complete'];
-    const mainSteps: QuestionnaireStep[] = ['habits', 'gum-health', 'irp-result', 'email-capture'];
+    const habitSteps: QuestionnaireStep[] = ['habits-smoking', 'habits-diabetes', 'habits-bruxism'];
+    const gumSteps: QuestionnaireStep[] = ['gum-bleeding', 'gum-loose-teeth', 'gum-hygiene'];
+    const mainSteps: QuestionnaireStep[] = [...habitSteps, ...gumSteps, 'irp-result', 'email-capture'];
     
     let allSteps = [...baseSteps];
     if (requiresDensityPro) {
@@ -126,19 +128,19 @@ const PatientQuestionnaire = () => {
     if (requiresDensityPro) {
       steps.push('density-intro', 'density-q1', 'density-q2', 'density-q3', 'density-q4', 'density-q5', 'density-complete');
     }
-    steps.push('habits', 'gum-health', 'irp-result', 'email-capture', 'processing', 'results');
+    steps.push('habits-smoking', 'habits-diabetes', 'habits-bruxism', 'gum-bleeding', 'gum-loose-teeth', 'gum-hygiene', 'irp-result', 'email-capture', 'processing', 'results');
     return steps.indexOf(step) + 1;
   };
 
   const getTotalSteps = (): number => {
-    return requiresDensityPro ? 13 : 7;
+    return requiresDensityPro ? 17 : 11;
   };
 
   const getCurrentPhase = (): 'base' | 'density' | 'health' | 'oral' | 'mapping' | 'complete' => {
     if (['welcome', 'name', 'demographics'].includes(step)) return 'base';
     if (step.startsWith('density')) return 'density';
-    if (step === 'habits') return 'health';
-    if (step === 'gum-health') return 'oral';
+    if (step.startsWith('habits')) return 'health';
+    if (step.startsWith('gum')) return 'oral';
     if (step === 'irp-result' || step === 'email-capture') return 'mapping';
     return 'complete';
   };
@@ -234,7 +236,7 @@ const PatientQuestionnaire = () => {
       setStep('density-intro');
       return;
     } else if (step === 'demographics') {
-      setStep('habits');
+      setStep('habits-smoking');
       return;
     }
 
@@ -247,9 +249,17 @@ const PatientQuestionnaire = () => {
       setStep('density-complete');
       setTimeout(() => triggerConfetti(), 300);
     }
-    else if (step === 'density-complete') setStep('habits');
-    else if (step === 'habits') setStep('gum-health');
-    else if (step === 'gum-health') setStep('irp-result'); // Punto de quiebre -> pantalla IRP
+    else if (step === 'density-complete') setStep('habits-smoking');
+    // Flujo de hábitos (una página por pregunta)
+    else if (step === 'habits-smoking') setStep('habits-diabetes');
+    else if (step === 'habits-diabetes') setStep('habits-bruxism');
+    else if (step === 'habits-bruxism') setStep('gum-bleeding');
+    // Flujo de salud de encías (una página por pregunta)
+    else if (step === 'gum-bleeding') setStep('gum-loose-teeth');
+    else if (step === 'gum-loose-teeth') setStep('gum-hygiene');
+    else if (step === 'gum-hygiene') {
+      calculateAndShowIRP();
+    }
     else if (step === 'irp-result') {
       // No debería llegar aquí, los botones de IRP manejan la navegación
     }
@@ -276,8 +286,12 @@ const PatientQuestionnaire = () => {
       'density-q3': () => setStep('density-q4'),
       'density-q4': () => setStep('density-q5'),
       'density-q5': () => { setStep('density-complete'); setTimeout(() => triggerConfetti(), 300); },
-      'habits': () => setStep('gum-health'),
-      'gum-health': () => setStep('irp-result'), // Ir a pantalla IRP después de salud de encías
+      'habits-smoking': () => setStep('habits-diabetes'),
+      'habits-diabetes': () => setStep('habits-bruxism'),
+      'habits-bruxism': () => setStep('gum-bleeding'),
+      'gum-bleeding': () => setStep('gum-loose-teeth'),
+      'gum-loose-teeth': () => setStep('gum-hygiene'),
+      'gum-hygiene': () => calculateAndShowIRP(),
     };
     return transitions[currentStep] || (() => {});
   };
@@ -643,21 +657,15 @@ const PatientQuestionnaire = () => {
           </div>
         );
 
-      // BLOQUE 2: Hábitos (Fumas, Diabetes, Bruxismo)
-      case 'habits':
-        // Determinar qué sub-pregunta mostrar basado en las respuestas actuales
-        const showDiabetesQuestion = implantAnswers.smoking !== undefined;
-        const showBruxismQuestion = implantAnswers.smoking !== undefined && implantAnswers.diabetes !== undefined;
-        const allHabitsAnswered = implantAnswers.smoking !== undefined && implantAnswers.diabetes !== undefined && implantAnswers.bruxism !== undefined;
-        
+      // BLOQUE 2: Hábitos - Página 1: Tabaco
+      case 'habits-smoking':
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Pregunta 1: Cigarrillo */}
             <SyncedQuestionBlock 
               rioMessage={`Perfecto, ${userProfile.name}. Hablemos ahora de algunos hábitos. Tu honestidad es clave para darte el mejor tratamiento posible.`}
               userName={userProfile.name}
               customAudioUrl="/audio/rio-fuma.mp3"
-              question="1. ¿Fumas actualmente?"
+              question="¿Fumas actualmente?"
               type="radio"
               options={[
                 { value: 'no', label: 'No' },
@@ -667,81 +675,72 @@ const PatientQuestionnaire = () => {
               value={implantAnswers.smoking}
               onChange={(value) => {
                 setImplantAnswers(prev => ({ ...prev, smoking: value as any }));
+                // Avanzar automáticamente después de seleccionar
+                setTimeout(() => setStep('habits-diabetes'), 300);
               }}
-              onNext={() => {}}
+              onNext={() => setStep('habits-diabetes')}
             />
-            
-            {/* Pregunta 2: Diabetes - aparece cuando smoking tiene valor */}
-            {showDiabetesQuestion && (
-              <div className="animate-fade-in">
-                <QuestionCard
-                  question="2. ¿Tienes diabetes?"
-                  type="radio"
-                  options={[
-                    { value: 'no', label: 'No' },
-                    { value: 'controlled', label: 'Sí, y está controlada' },
-                    { value: 'uncontrolled', label: 'Sí, y no está bien controlada' },
-                  ]}
-                  value={implantAnswers.diabetes}
-                  onChange={(value) => {
-                    setImplantAnswers(prev => ({ ...prev, diabetes: value as any }));
-                  }}
-                  onNext={() => {}}
-                  hideNextButton={true}
-                />
-              </div>
-            )}
-            
-            {/* Pregunta 3: Bruxismo - aparece cuando diabetes tiene valor */}
-            {showBruxismQuestion && (
-              <div className="animate-fade-in">
-                <QuestionCard
-                  question="3. ¿Aprietas o rechinas los dientes?"
-                  type="radio"
-                  options={[
-                    { value: 'no', label: 'No' },
-                    { value: 'unsure', label: 'No estoy seguro/a' },
-                    { value: 'yes', label: 'Sí' },
-                  ]}
-                  value={implantAnswers.bruxism}
-                  onChange={(value) => {
-                    setImplantAnswers(prev => ({ ...prev, bruxism: value as any }));
-                  }}
-                  onNext={() => {}}
-                  hideNextButton={true}
-                />
-              </div>
-            )}
-            
-            {/* Botón para continuar cuando todas están respondidas */}
-            {allHabitsAnswered && (
-              <div className="animate-fade-in pt-4">
-                <Button 
-                  onClick={() => setStep('gum-health')}
-                  size="lg" 
-                  className="w-full h-12 text-base font-medium rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all"
-                >
-                  Continuar →
-                </Button>
-              </div>
-            )}
           </div>
         );
 
-      // BLOQUE 3: Salud de encías (3 preguntas)
-      case 'gum-health':
-        // Determinar qué sub-pregunta mostrar basado en las respuestas actuales
-        const showLooseTeethQuestion = implantAnswers.gumBleeding !== undefined;
-        const showOralHygieneQuestion = implantAnswers.gumBleeding !== undefined && implantAnswers.looseTeethLoss !== undefined;
-        const allGumHealthAnswered = implantAnswers.gumBleeding !== undefined && implantAnswers.looseTeethLoss !== undefined && implantAnswers.oralHygiene !== undefined;
-        
+      // BLOQUE 2: Hábitos - Página 2: Diabetes
+      case 'habits-diabetes':
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Pregunta 1: Sangrado de encías */}
             <SyncedQuestionBlock 
-              rioMessage="Veamos ahora la salud de tus encías y tu higiene oral."
+              rioMessage="Ahora, sobre tu salud general."
               userName={userProfile.name}
-              question="1. ¿Sangran tus encías cuando te cepillas los dientes?"
+              customAudioUrl="/audio/rio-diabetes-pregunta.mp3"
+              question="¿Tienes diabetes?"
+              type="radio"
+              options={[
+                { value: 'no', label: 'No' },
+                { value: 'controlled', label: 'Sí, y está controlada' },
+                { value: 'uncontrolled', label: 'Sí, y no está bien controlada' },
+              ]}
+              value={implantAnswers.diabetes}
+              onChange={(value) => {
+                setImplantAnswers(prev => ({ ...prev, diabetes: value as any }));
+                setTimeout(() => setStep('habits-bruxism'), 300);
+              }}
+              onNext={() => setStep('habits-bruxism')}
+            />
+          </div>
+        );
+
+      // BLOQUE 2: Hábitos - Página 3: Bruxismo
+      case 'habits-bruxism':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <SyncedQuestionBlock 
+              rioMessage="Una última pregunta sobre tus hábitos."
+              userName={userProfile.name}
+              customAudioUrl="/audio/rio-brux-pregunta.mp3"
+              question="¿Aprietas o rechinas los dientes?"
+              type="radio"
+              options={[
+                { value: 'no', label: 'No' },
+                { value: 'unsure', label: 'No estoy seguro/a' },
+                { value: 'yes', label: 'Sí' },
+              ]}
+              value={implantAnswers.bruxism}
+              onChange={(value) => {
+                setImplantAnswers(prev => ({ ...prev, bruxism: value as any }));
+                setTimeout(() => setStep('gum-bleeding'), 300);
+              }}
+              onNext={() => setStep('gum-bleeding')}
+            />
+          </div>
+        );
+
+      // BLOQUE 3: Salud de encías - Página 1: Sangrado
+      case 'gum-bleeding':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <SyncedQuestionBlock 
+              rioMessage="Veamos ahora la salud de tus encías."
+              userName={userProfile.name}
+              question="¿Sangran tus encías cuando te cepillas los dientes?"
               type="radio"
               options={[
                 { value: 'never', label: 'Nunca o casi nunca' },
@@ -751,66 +750,58 @@ const PatientQuestionnaire = () => {
               value={implantAnswers.gumBleeding}
               onChange={(value) => {
                 setImplantAnswers(prev => ({ ...prev, gumBleeding: value as any }));
+                setTimeout(() => setStep('gum-loose-teeth'), 300);
               }}
-              onNext={() => {}}
+              onNext={() => setStep('gum-loose-teeth')}
             />
-            
-            {/* Pregunta 2: Dientes sueltos - aparece cuando gumBleeding tiene valor */}
-            {showLooseTeethQuestion && (
-              <div className="animate-fade-in">
-              <QuestionCard
-                question="2. ¿Has perdido algún diente porque se movía o se 'soltó' solo, sin causa aparente como un golpe o caries grande?"
-                type="radio"
-                options={[
-                  { value: 'no', label: 'No' },
-                  { value: '1-2', label: 'Sí, 1 o 2 dientes' },
-                  { value: 'several', label: 'Sí, varios dientes' },
-                ]}
-                value={implantAnswers.looseTeethLoss}
-                onChange={(value) => {
-                  setImplantAnswers(prev => ({ ...prev, looseTeethLoss: value as any }));
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
-              </div>
-            )}
-            
-            {/* Pregunta 3: Higiene oral - aparece cuando looseTeethLoss tiene valor */}
-            {showOralHygieneQuestion && (
-              <div className="animate-fade-in">
-              <QuestionCard
-                question="3. ¿Cuántas veces al día te cepillas los dientes?"
-                type="radio"
-                options={[
-                  { value: 'less-once', label: 'Menos de una vez' },
-                  { value: 'once', label: 'Una vez' },
-                  { value: 'twice-plus', label: 'Dos o más veces' },
-                ]}
-                value={implantAnswers.oralHygiene}
-                onChange={(value) => {
-                  setImplantAnswers(prev => ({ ...prev, oralHygiene: value as any }));
-                }}
-                onNext={() => {}}
-                hideNextButton={true}
-              />
-              </div>
-            )}
-            
-            {/* Botón para continuar cuando todas están respondidas */}
-            {allGumHealthAnswered && (
-              <div className="animate-fade-in pt-4">
-                <Button 
-                  onClick={() => {
-                    calculateAndShowIRP();
-                  }}
-                  size="lg" 
-                  className="w-full h-12 text-base font-medium rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all"
-                >
-                  Ver Mi Resultado →
-                </Button>
-              </div>
-            )}
+          </div>
+        );
+
+      // BLOQUE 3: Salud de encías - Página 2: Dientes sueltos
+      case 'gum-loose-teeth':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <SyncedQuestionBlock 
+              rioMessage="Esta información es muy útil para tu evaluación."
+              userName={userProfile.name}
+              question="¿Has perdido algún diente porque se movía o se 'soltó' solo?"
+              type="radio"
+              options={[
+                { value: 'no', label: 'No' },
+                { value: '1-2', label: 'Sí, 1 o 2 dientes' },
+                { value: 'several', label: 'Sí, varios dientes' },
+              ]}
+              value={implantAnswers.looseTeethLoss}
+              onChange={(value) => {
+                setImplantAnswers(prev => ({ ...prev, looseTeethLoss: value as any }));
+                setTimeout(() => setStep('gum-hygiene'), 300);
+              }}
+              onNext={() => setStep('gum-hygiene')}
+            />
+          </div>
+        );
+
+      // BLOQUE 3: Salud de encías - Página 3: Higiene oral
+      case 'gum-hygiene':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <SyncedQuestionBlock 
+              rioMessage="Última pregunta antes de ver tu resultado."
+              userName={userProfile.name}
+              question="¿Cuántas veces al día te cepillas los dientes?"
+              type="radio"
+              options={[
+                { value: 'less-once', label: 'Menos de una vez' },
+                { value: 'once', label: 'Una vez' },
+                { value: 'twice-plus', label: 'Dos o más veces' },
+              ]}
+              value={implantAnswers.oralHygiene}
+              onChange={(value) => {
+                setImplantAnswers(prev => ({ ...prev, oralHygiene: value as any }));
+                setTimeout(() => calculateAndShowIRP(), 300);
+              }}
+              onNext={() => calculateAndShowIRP()}
+            />
           </div>
         );
 
