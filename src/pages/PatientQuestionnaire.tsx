@@ -738,8 +738,9 @@ const PatientQuestionnaire = () => {
         return (
           <div className="space-y-6 animate-fade-in">
             <SyncedQuestionBlock 
-              rioMessage="Veamos ahora la salud de tus encías."
+              rioMessage="Ahora hablemos de tus encías. Esto es muy importante para el éxito de un implante."
               userName={userProfile.name}
+              useTTS={true}
               question="¿Sangran tus encías cuando te cepillas los dientes?"
               type="radio"
               options={[
@@ -762,8 +763,9 @@ const PatientQuestionnaire = () => {
         return (
           <div className="space-y-6 animate-fade-in">
             <SyncedQuestionBlock 
-              rioMessage="Esta información es muy útil para tu evaluación."
+              rioMessage="Esta información es clave para evaluar la salud de tu hueso."
               userName={userProfile.name}
+              useTTS={true}
               question="¿Has perdido algún diente porque se movía o se 'soltó' solo?"
               type="radio"
               options={[
@@ -786,8 +788,9 @@ const PatientQuestionnaire = () => {
         return (
           <div className="space-y-6 animate-fade-in">
             <SyncedQuestionBlock 
-              rioMessage="Última pregunta antes de ver tu resultado."
+              rioMessage="Última pregunta antes de mostrarte tu resultado."
               userName={userProfile.name}
+              useTTS={true}
               question="¿Cuántas veces al día te cepillas los dientes?"
               type="radio"
               options={[

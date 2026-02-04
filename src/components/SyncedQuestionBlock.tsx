@@ -7,6 +7,7 @@ interface SyncedQuestionBlockProps {
   rioMessage: string;
   userName?: string;
   customAudioUrl?: string;
+  useTTS?: boolean;
   expression?: RioExpression;
   question: string;
   type: 'text' | 'number' | 'radio' | 'gender' | 'checkbox';
@@ -30,6 +31,7 @@ const SyncedQuestionBlock = ({
   rioMessage,
   userName,
   customAudioUrl,
+  useTTS = false,
   expression = 'encouraging',
   question,
   type,
@@ -104,6 +106,7 @@ const SyncedQuestionBlock = ({
         userName={userName}
         expression={expression}
         customAudioUrl={customAudioUrl}
+        useTTS={useTTS}
         onAudioStart={handleAudioStart}
         onAudioEnd={handleAudioEnd}
       />

@@ -12,6 +12,7 @@ interface RioAvatarProps {
   className?: string;
   autoSpeak?: boolean;
   customAudioUrl?: string;
+  useTTS?: boolean;
   onAudioStart?: () => void;
   onAudioEnd?: () => void;
 }
@@ -23,6 +24,7 @@ const RioAvatar = ({
   className,
   autoSpeak = true,
   customAudioUrl,
+  useTTS = false,
   onAudioStart,
   onAudioEnd
 }: RioAvatarProps) => {
@@ -72,12 +74,17 @@ const RioAvatar = ({
       onAudioStart?.();
       if (customAudioUrl) {
         playCustomAudio();
+      } else if (useTTS) {
+        // Use TTS API
+        speak(processedMessage).then(() => {
+          onAudioEnd?.();
+        });
       } else {
-        // No custom audio and no TTS available - just show message silently
+        // No custom audio and no TTS - show message silently
         onAudioEnd?.();
       }
     }
-  }, [processedMessage, autoSpeak, speak, customAudioUrl, onAudioStart, onAudioEnd]);
+  }, [processedMessage, autoSpeak, speak, customAudioUrl, useTTS, onAudioStart, onAudioEnd]);
 
   // Cleanup on unmount
   useEffect(() => {
